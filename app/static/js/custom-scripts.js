@@ -1,5 +1,6 @@
 $(document).ready(function() {
     $('#example').DataTable( {
+
         "processing": true,
         "serverSide": true,
         "ajax": {
@@ -7,6 +8,6 @@ $(document).ready(function() {
         data: function ( args ) {
           return { "args": JSON.stringify( args ) };
     }
-        }
+        },
     } );
 } );
