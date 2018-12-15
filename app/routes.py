@@ -1,10 +1,16 @@
-from flask import render_template, jsonify, request
-from app import app
+from flask import render_template, jsonify, request, flash, redirect, url_for
+from app import app, login_manager, db
 import json
 import pandas as pd
 import sqlite3
-from app.models import Journals
+from app.models import Journals, User
+from app.forms import LoginForm, RegisterForm
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import login_user, login_required, current_user, logout_user
 
+@login_manager.user_loader
+def load_user(id):
+    return User.query.get(int(id))
 
 @app.route('/')
 @app.route('/index')
@@ -114,6 +120,38 @@ def table_result():
 
     return json_response
 
-@app.route('/test')
-def test():
-    return render_template('test.html')
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    form = LoginForm()
+    error = None
+    if form.validate_on_submit():
+        username = form.username.data
+        password = form.password.data
+        user = User.query.filter_by(username=username).first()
+        if User.query.filter_by(username=username).first() != None:
+            if check_password_hash(user.password, password):
+                login_user(user)
+                flash('Successfully logged in!')
+                return redirect(url_for('index'))
+        else:
+            error = 'username or password is incorrect or does not exist'
+
+    return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    form = RegisterForm()
+    error = None
+    if form.validate_on_submit():
+        username = form.username.data
+        password = generate_password_hash(form.password.data)
+        if User.query.filter_by(username=username).first() != None:
+            error = 'user already exits'
+        else:
+            user = User(username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+            login_user(user)
+            flash('Successfully registered and logged in!')
+            return redirect(url_for('index'))
+    return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)

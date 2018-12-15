@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 import pandas as pd
 import os
 import config
+from app.models import User
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = config.configurations['SQLALCHEMY_DATABASE_URI']
@@ -63,6 +64,10 @@ def create_db():
 
 
 if __name__ == '__main__':
-    # Create sqlite database if it does not exits
+    # Create sqlite database if it does not exits, populate with Journals data
     if not os.path.exists(config.database_path):
         create_db()
+
+    # Create The User Table
+    from app.models import User
+    User.__table__.create(db.session.bind, checkfirst=True)
