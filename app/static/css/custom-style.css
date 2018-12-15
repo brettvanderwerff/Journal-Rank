@@ -6,3 +6,21 @@ background: url('../images/background.jpg')no-repeat center center fixed;
 background-size: cover;
 }
 
+.fa-star,.fa-star-o{
+	color:orange;
+}
+.rating-num {
+
+    margin-top:0px;font-size: 54px;
+}
+.progress {
+    margin-bottom: 5px;
+}
+.progress-bar {
+    text-align: left;
+    }
+
+.rating-desc .col-md-3 {
+    padding-right: 0px;
+
+}

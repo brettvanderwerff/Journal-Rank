@@ -9,3 +9,7 @@ Far from complete, but the WIP project can be set up on Linux by:
 2. Installing requirements `$pip install -r requirements.txt`
 3. Setting Flask environment variable: `$export FLASK_APP=journal-rank.py`
 4. Running the Flask app `$flask run`
+
+References:
+
+SCImago, (n.d.). SJR — SCImago Journal & Country Rank [Portal]. Retrieved 12/14/18, from http://www.scimagojr.com

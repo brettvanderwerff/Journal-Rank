@@ -15,18 +15,11 @@ def index():
 def journal_info(journal_name):
     journal_name = journal_name.replace('_', ' ')
     journal_data = Journals.query.filter_by(title=journal_name).first()
-    print(journal_data.title)
-    print(journal_data.total_docs_2017)
-    print(journal_data.total_docs_3_years)
-    print(journal_data.total_refs)
-    print(journal_data.total_cites_3_years)
-    print(journal_data.citable_docs_3_years)
-    print(journal_data.cites_per_doc_2_years)
-    print(journal_data.refs_per_doc)
-    print(journal_data.country)
-    print(journal_data.publisher)
-    print(journal_data.rating)
-    return render_template('journal_info.html')
+    data_dict = {}
+    data_dict['Journal Title'] = journal_data.title
+    data_dict['Publisher'] = journal_data.publisher
+    data_dict['Country'] = journal_data.country
+    return render_template('journal_info.html', data_dict=data_dict)
 
 
 @app.route('/table_result')
@@ -120,3 +113,7 @@ def table_result():
     con.close()
 
     return json_response
+
+@app.route('/test')
+def test():
+    return render_template('test.html')
