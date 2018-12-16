@@ -15,7 +15,7 @@ def load_user(id):
 @app.route('/')
 @app.route('/index')
 def index():
-    return render_template('index.html')
+    return render_template('index.html', logged_in=current_user.is_authenticated)
 
 @app.route('/journal_info/<journal_name>')
 def journal_info(journal_name):
@@ -25,7 +25,7 @@ def journal_info(journal_name):
     data_dict['Journal Title'] = journal_data.title
     data_dict['Publisher'] = journal_data.publisher
     data_dict['Country'] = journal_data.country
-    return render_template('journal_info.html', data_dict=data_dict)
+    return render_template('journal_info.html', data_dict=data_dict, logged_in=current_user.is_authenticated)
 
 
 @app.route('/table_result')
@@ -138,11 +138,20 @@ def login():
 
     return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Successfully logged out')
+    return redirect(url_for('index'))
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    #ToDo may need underscore in render field
     form = RegisterForm()
     error = None
     if form.validate_on_submit():
+        print("validate")
         username = form.username.data
         password = generate_password_hash(form.password.data)
         if User.query.filter_by(username=username).first() != None:
@@ -155,3 +164,7 @@ def register():
             flash('Successfully registered and logged in!')
             return redirect(url_for('index'))
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
+
+@app.route('/user_profile')
+def user_profile():
+    return render_template('user_profile.html', logged_in=current_user.is_authenticated)

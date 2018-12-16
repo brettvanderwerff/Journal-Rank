@@ -1,5 +1,5 @@
 from wtforms import StringField, PasswordField, SubmitField
-from flask_wtf import FlaskForm, RecaptchaField
+from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, EqualTo
 
 
@@ -10,7 +10,7 @@ class RegisterForm(FlaskForm):
                              validators=[DataRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm = PasswordField('Confirm Password')
     submit = SubmitField('Sign Me Up')
-    recaptcha = RecaptchaField()
+
 
 
 class LoginForm(FlaskForm):

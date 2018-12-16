@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mt-3">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center">
+                        <h1 class="text-black">User name</h1>
+                        <img src="http://ssl.gstatic.com/accounts/ui/avatar_2x.png"
+                             class="avatar img-circle img-thumbnail" alt="avatar">
+                        <h6>Upload a different photo...</h6>
+                        <div>
+                            <button type="button" class="btn btn-primary">Change Avatar</button>
+                        </div>
+                        </hr><br>
+
+                        <ul class="list-group">
+                            <li class="list-group-item text-muted">Activity <i class="fa fa-dashboard fa-1x"></i></li>
+                            <li class="list-group-item text-right"><span
+                                    class="pull-left"><strong>Ratings</strong></span> 125
+                            </li>
+                            <li class="list-group-item text-right"><span
+                                    class="pull-left"><strong>Reviews</strong></span> 13
+                            </li>
+                        </ul>
+
+                    </div>
+                </div>
+            </div><!--/col-3-->
+        </div>
+        <div class="col-sm-8">
+            <div class="row mb-1">
+            <div class="col-sm-12 text-center">
+            <h1 class="mt-5 text-white">User Reviews:</h1>
+        </div>
+                </div>
+            <div class="card bg-light">
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <img src="http://dummyimage.com/60x60/666/ffffff&text=No+Image"
+                                 class="img-rounded">
+                            <div class="review-block-name"><a href="#">nktailor</a></div>
+                            <div class="review-block-date">January 29, 2016<br/>1 day ago</div>
+                        </div>
+                        <div class="col-sm-9">
+                            <div class="review-block-rate">
+                                <button type="button" class="btn btn-warning btn-xs"
+                                        aria-label="Left Align">
+                                    <i aria-hidden="true" class="fa fa-star"></i>
+                                </button>
+                                <button type="button" class="btn btn-warning btn-xs"
+                                        aria-label="Left Align">
+                                    <i aria-hidden="true" class="fa fa-star"></i>
+                                </button>
+                                <button type="button" class="btn btn-warning btn-xs"
+                                        aria-label="Left Align">
+                                    <i aria-hidden="true" class="fa fa-star"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-grey btn-xs"
+                                        aria-label="Left Align">
+                                    <i aria-hidden="true" class="fa fa-star-o"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-grey btn-xs"
+                                        aria-label="Left Align">
+                                    <i aria-hidden="true" class="fa fa-star-o"></i>
+                                </button>
+                            </div>
+                            <div class="review-block-title">Awesome journal</div>
+                            <div class="review-block-description">Awesome journal Awesome journal Awesome journal
+                                Awesome journal Awesome journal Awesome journal Awesome journal Awesome journal
+                                Fix css for gold star outline!
+                            </div>
+                        </div>
+                    </div>
+                    <hr/>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}
