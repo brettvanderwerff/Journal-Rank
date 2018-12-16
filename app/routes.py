@@ -4,7 +4,7 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journals, User
-from app.forms import LoginForm, RegisterForm
+from app.forms import LoginForm, RegisterForm, ReviewForm
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
 
@@ -168,3 +168,9 @@ def register():
 @app.route('/user_profile')
 def user_profile():
     return render_template('user_profile.html', logged_in=current_user.is_authenticated)
+
+@app.route('/new_review')
+def new_review():
+    # https://www.youtube.com/watch?v=I2dJuNwlIH0
+    form = ReviewForm()
+    return render_template('new_review.html', form=form)

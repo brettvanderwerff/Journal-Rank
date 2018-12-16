@@ -1,4 +1,4 @@
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField
 from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, EqualTo
 
@@ -17,5 +17,9 @@ class LoginForm(FlaskForm):
     username = StringField('username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Log Me In')
+
+class ReviewForm(FlaskForm):
+    text = TextAreaField('Written Review')
+    submit = SubmitField('Submit')
 
 
