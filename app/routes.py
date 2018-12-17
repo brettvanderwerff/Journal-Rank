@@ -3,34 +3,65 @@ from app import app, login_manager, db
 import json
 import pandas as pd
 import sqlite3
-from app.models import Journals, User
-from app.forms import LoginForm, RegisterForm, ReviewForm
+from app.models import Journal, User, Review
+from app.forms import LoginForm, RegisterForm, ReviewForm, JournalInfo
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
+
 
 @login_manager.user_loader
 def load_user(id):
     return User.query.get(int(id))
+
 
 @app.route('/')
 @app.route('/index')
 def index():
     return render_template('index.html', logged_in=current_user.is_authenticated)
 
-@app.route('/journal_info/<journal_name>')
+
+@app.route('/journal_info/<journal_name>', methods=['GET', 'POST'])
 def journal_info(journal_name):
     journal_name = journal_name.replace('_', ' ')
-    journal_data = Journals.query.filter_by(title=journal_name).first()
+    journal_data = Journal.query.filter_by(title=journal_name).first()
     data_dict = {}
     data_dict['Journal Title'] = journal_data.title
     data_dict['Publisher'] = journal_data.publisher
     data_dict['Country'] = journal_data.country
-    return render_template('journal_info.html', data_dict=data_dict, logged_in=current_user.is_authenticated)
+    form = JournalInfo()
+
+    reviews = Review.query.filter_by(journal_id=journal_data.id).all()
+    if len(reviews) == 0:
+        reviews = None
+
+    if form.validate_on_submit():
+        journal_name = journal_name.replace(' ', '_')
+        return (redirect(url_for('new_review', journal_name=journal_name)))
+
+    return render_template('journal_info.html', data_dict=data_dict,
+                           logged_in=current_user.is_authenticated, form=form,
+                           reviews=reviews)
+
+
+@app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
+@login_required
+def new_review(journal_name):
+    journal_name = journal_name.replace('_', ' ')
+    form = ReviewForm()
+    if form.validate_on_submit():
+        user = User.query.filter_by(id=current_user.get_id()).first()
+        journal = Journal.query.filter_by(title=journal_name).first()
+        review = Review(review_rating=form.rating.data, review_text=form.text.data, user=user, journal=journal)
+        db.session.add(review)
+        db.session.commit()
+        journal_name = journal_name.replace(' ', '_')
+        return redirect(url_for('journal_info', journal_name=journal_name))
+    return render_template('new_review.html', form=form, journal_name=journal_name,
+                           logged_in=current_user.is_authenticated)
 
 
 @app.route('/table_result')
 def table_result():
-
     def parse_query_string(query_string, column_names):
         '''
         Parses query string to determine what values should be used to query the database
@@ -58,29 +89,30 @@ def table_result():
         table_length = cur.fetchone()[0]
         return table_length
 
-
-    def build_table(con, column_names, table, query_values):
+    def build_table(con, query_values):
         '''
         Builds pandas dataframe from SQL query
         :param con: database connection
-        :param column_names: database table columns to be included in dataframe
-        :param table: database table name
         :param query_values: SQL arguments dictionary
         :return: Pandas dataframe
         '''
-        concatenate_columns = ', '.join(column_names)
-        df = pd.read_sql_query("SELECT {} FROM (SELECT * FROM {} ORDER BY {} {})"
-                               " WHERE (title LIKE '%{}%' OR publisher LIKE '%{}%' OR country LIKE '%{}%') LIMIT {},{};"
-                               "".format(concatenate_columns,
-                                         table,
-                                         query_values['sort_column'],
-                                         query_values['sort_dir'],
-                                         query_values['search_term'],
-                                         query_values['search_term'],
-                                         query_values['search_term'],
-                                         query_values['start_index'],
-                                         query_values['length']),
-                               con)
+        # ToDo this needs to be paramaterized
+        df = pd.read_sql_query("SELECT title, country, publisher, rating FROM "
+                               "(SELECT title, country, publisher, AVG(review_rating) AS rating FROM journal "
+                               "LEFT JOIN review ON journal.id = review.journal_id "
+                               "GROUP BY title "
+                               "ORDER BY {} {}) "
+                               "WHERE (title LIKE '%{}%' OR publisher LIKE '%{}%' OR country LIKE '%{}%') "
+                               "LIMIT {},{};"
+                               "".format(
+            query_values['sort_column'],
+            query_values['sort_dir'],
+            query_values['search_term'],
+            query_values['search_term'],
+            query_values['search_term'],
+            query_values['start_index'],
+            query_values['length']),
+            con)
         return df
 
     def convert_to_href(column_name, df, prefix=''):
@@ -91,7 +123,8 @@ def table_result():
         df[column_name] = '<a href="{}/'.format(prefix) + \
                           df[column_name].str.replace(' ', '_') + '">' + \
                           df[column_name] + '</a>'
-        return df
+        convert_nan_to_string = df.where((pd.notnull(df)), 'N/A')  # datatables will give error with NaN
+        return convert_nan_to_string
 
     def build_json_response(df, query_string, table_length):
         '''
@@ -106,19 +139,18 @@ def table_result():
         results['data'] = df_list
         return jsonify(results)
 
-
     con = sqlite3.connect('database.sqlite3')
-    table_length = get_table_length(con, table='journals')
+    table_length = get_table_length(con, table='journal')
     query_string = json.loads(request.values.get("args"))
     column_names = ['title', 'country', 'publisher', 'rating']
-    table = 'journals'
     query_values = parse_query_string(query_string, column_names)
-    df = build_table(con, column_names, table, query_values)
+    df = build_table(con, query_values)
     df_with_href = convert_to_href('title', df, 'journal_info')
     json_response = build_json_response(df_with_href, query_string, table_length)
     con.close()
 
     return json_response
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -138,6 +170,7 @@ def login():
 
     return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
+
 @app.route('/logout')
 @login_required
 def logout():
@@ -145,13 +178,13 @@ def logout():
     flash('Successfully logged out')
     return redirect(url_for('index'))
 
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    #ToDo may need underscore in render field
+    # ToDo change models to email instead of username enforce only .edu extension
     form = RegisterForm()
     error = None
     if form.validate_on_submit():
-        print("validate")
         username = form.username.data
         password = generate_password_hash(form.password.data)
         if User.query.filter_by(username=username).first() != None:
@@ -165,12 +198,18 @@ def register():
             return redirect(url_for('index'))
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
+
 @app.route('/user_profile')
 def user_profile():
     return render_template('user_profile.html', logged_in=current_user.is_authenticated)
 
-@app.route('/new_review')
-def new_review():
-    # https://www.youtube.com/watch?v=I2dJuNwlIH0
-    form = ReviewForm()
-    return render_template('new_review.html', form=form)
+
+@app.route('/about')
+def about():
+    return render_template('about.html', logged_in=current_user.is_authenticated)
+
+
+@app.errorhandler(401)
+def access_denied(e):
+    flash('You need to register or be logged in to do that :(')
+    return render_template('401.html')

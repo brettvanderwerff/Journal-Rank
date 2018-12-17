@@ -12,3 +12,11 @@
 </div>
 
 {% endmacro %}
+
+{% macro render_radio_fields(field) %}
+<div class="rating">
+    {% for subfield in field %}
+    <span>{{ subfield }}<label for="{{ subfield.id }}"></label></span>
+    {% endfor %}
+</div>
+{% endmacro %}

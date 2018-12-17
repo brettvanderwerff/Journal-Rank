@@ -1,6 +1,9 @@
+
+// Datatable logic
+
 $(document).ready(function() {
     $('#example').DataTable( {
-
+        "order": [[ 3, "desc" ]],
         "processing": true,
         "serverSide": true,
         "ajax": {
@@ -11,3 +14,15 @@ $(document).ready(function() {
         },
     } );
 } );
+
+
+// Dynamic Review Submission Stars Logic
+
+$(document).ready(function(){
+//  Check Radio-box
+    $(".rating input:radio").attr("checked", false);
+    $('.rating input').click(function () {
+        $(".rating span").removeClass('checked');
+        $(this).parent().addClass('checked');
+    });
+});

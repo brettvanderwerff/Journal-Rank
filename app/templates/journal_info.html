@@ -114,15 +114,23 @@
             <div class="card bg-light text-center">
                 <div class="card-body">
                     <h1 class="text-black mb-3">Readership Reviews:</h1>
-                    <p class="lead">
-                    <a class="btn btn-primary btn-lg" href="/new_review" role="button">Add Review</a>
-                </p>
+                    {% if logged_in %}
+                    <form action="" method="post" role="form" novalidate>
+                        {{ form.csrf_token }}
+                        <fieldset>
+                            {{ form.add_new(type="submit", class="btn btn-lg btn-primary",
+                            value=form.add_new.label.text)|safe }}
+                        </fieldset>
+                    </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="row justify-content-center">
+    {% if reviews %}
+    {% for review in reviews %}
+    <div class="row justify-content-center mt-3">
         <div class="col-sm-7">
             <div class="card bg-light">
                 <div class="card-body">
@@ -135,31 +143,21 @@
                         </div>
                         <div class="col-sm-9">
                             <div class="review-block-rate">
+                                {% for x in range(review.review_rating) %}
                                 <button type="button" class="btn btn-warning btn-xs"
                                         aria-label="Left Align">
                                     <i aria-hidden="true" class="fa fa-star"></i>
                                 </button>
-                                <button type="button" class="btn btn-warning btn-xs"
-                                        aria-label="Left Align">
-                                    <i aria-hidden="true" class="fa fa-star"></i>
-                                </button>
-                                <button type="button" class="btn btn-warning btn-xs"
-                                        aria-label="Left Align">
-                                    <i aria-hidden="true" class="fa fa-star"></i>
-                                </button>
+                                {% endfor %}
+                                {% for x in range(5 - review.review_rating) %}
                                 <button type="button" class="btn btn-default btn-grey btn-xs"
                                         aria-label="Left Align">
                                     <i aria-hidden="true" class="fa fa-star-o"></i>
                                 </button>
-                                <button type="button" class="btn btn-default btn-grey btn-xs"
-                                        aria-label="Left Align">
-                                    <i aria-hidden="true" class="fa fa-star-o"></i>
-                                </button>
+                                {% endfor %}
                             </div>
-                            <div class="review-block-title">Awesome journal</div>
-                            <div class="review-block-description">Awesome journal Awesome journal Awesome journal
-                                Awesome journal Awesome journal Awesome journal Awesome journal Awesome journal
-                                Fix css for gold star outline!
+                            <div class="review-block-description">
+                                {{ review.review_text }}
                             </div>
                         </div>
                     </div>
@@ -168,6 +166,11 @@
             </div>
         </div>
     </div>
+
+    {% endfor %}
+    {% endif %}
+
+
 </div>
 
 
