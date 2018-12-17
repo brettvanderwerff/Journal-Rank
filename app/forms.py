@@ -1,8 +1,6 @@
-from wtforms import StringField, PasswordField, SubmitField, TextAreaField
+from wtforms import StringField, PasswordField, SubmitField, TextAreaField, RadioField
 from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired, EqualTo
-
-
+from wtforms.validators import DataRequired, EqualTo, InputRequired
 
 class RegisterForm(FlaskForm):
     username = StringField('username', validators=[DataRequired()])
@@ -11,7 +9,8 @@ class RegisterForm(FlaskForm):
     confirm = PasswordField('Confirm Password')
     submit = SubmitField('Sign Me Up')
 
-
+class JournalInfo(FlaskForm):
+    add_new = SubmitField('Add New Review')
 
 class LoginForm(FlaskForm):
     username = StringField('username', validators=[DataRequired()])
@@ -19,6 +18,8 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Log Me In')
 
 class ReviewForm(FlaskForm):
+    rating = RadioField('rating', choices=[("5", "str5"), ("4", "str4"), ("3", "str3"), ("2", "str2"), ("1", "str1")],
+                        validators=[InputRequired()])
     text = TextAreaField('Written Review')
     submit = SubmitField('Submit')
 
