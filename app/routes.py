@@ -46,7 +46,8 @@ def journal_info(journal_name):
         journal_name = journal_name.replace(' ', '_')
         return (redirect(url_for('new_review', journal_name=journal_name)))
 
-    current_user_id = int(current_user.get_id())
+
+    current_user_id = int(current_user.get_id()) if current_user.get_id() else None
 
     return render_template('journal_info.html', data_dict=data_dict,
                            logged_in=current_user.is_authenticated, new_review=new_review,
@@ -55,6 +56,16 @@ def journal_info(journal_name):
                            number_reviews=number_reviews,
                            current_user_id=current_user_id)
 
+@app.route('/edit_review/<id>')
+@login_required
+def edit_reviw(id):
+    current_user_id = current_user.get_id()
+    review = Review(id=id)
+    if review.user_id != current_user_id:
+        return 401
+    return review.review_text
+
+
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
 @login_required
@@ -62,7 +73,6 @@ def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
     #ToDo only let user review once
-    #ToDo track the time a post was made
     #ToDo allow users to edit posts
     #ToDo rating div in css is too bread and messes the posts up
     if form.validate_on_submit():
@@ -200,21 +210,23 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # ToDo change models to email instead of email enforce only .edu extension
     form = RegisterForm()
     error = None
     if form.validate_on_submit():
         email = form.email.data
-        password = generate_password_hash(form.password.data)
-        if User.query.filter_by(email=email).first() != None:
-            error = 'user already exits'
+        if form.email.data.endswith('.edu'):
+            password = generate_password_hash(form.password.data)
+            if User.query.filter_by(email=email).first() != None:
+                error = 'user already exits'
+            else:
+                user = User(email=email, password=password)
+                db.session.add(user)
+                db.session.commit()
+                login_user(user)
+                flash('Successfully registered and logged in!')
+                return redirect(url_for('index'))
         else:
-            user = User(email=email, password=password)
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-            flash('Successfully registered and logged in!')
-            return redirect(url_for('index'))
+            error = 'email must have .edu extension'
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
 

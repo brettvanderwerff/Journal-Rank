@@ -10,10 +10,11 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('Sign Me Up')
 
 class NewReview(FlaskForm):
-    new_review = SubmitField('Add New Review')
+    submit = SubmitField('Add New Review')
 
 class EditReview(FlaskForm):
-    edit_review = SubmitField('Edit')
+    id = None
+    submit = SubmitField('Edit')
 
 class LoginForm(FlaskForm):
     email = StringField('email', validators=[DataRequired()])

@@ -118,8 +118,8 @@
                     <form action="" method="post" role="form" novalidate>
                         {{ new_review.csrf_token }}
                         <fieldset>
-                            {{ new_review.new_review(type="submit", class="btn btn-lg btn-primary",
-                            value=new_review.new_review.label.text)|safe }}
+                            {{ new_review.submit(type="submit", class="btn btn-lg btn-primary",
+                            value=new_review.submit.label.text)|safe }}
                         </fieldset>
                     </form>
                     {% endif %}
@@ -164,8 +164,8 @@
                          <form action="" method="post" role="form" novalidate>
                         {{ edit_review.csrf_token }}
                         <fieldset>
-                            {{ edit_review.edit_review(type="submit", class="btn btn-lg btn-primary",
-                            value=edit_review.edit_review.label.text)|safe }}
+                            {{ edit_review.submit(type="submit", class="btn btn-info",
+                            value=edit_review.submit.label.text)|safe }}
                         </fieldset>
                     </form>
                         {% endif %}
