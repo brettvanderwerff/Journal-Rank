@@ -36,7 +36,7 @@
                                 <i aria-hidden="true" class="fa fa-star-o"></i>
                             </div>
                             <div>
-                                <i class="fa fa-user" aria-hidden="true"></i> 1,050,008 total
+                                <i class="fa fa-user" aria-hidden="true"></i> {{ number_reviews }}  total
                             </div>
                         </div>
                         <div class="col-xs-12 col-md-6">
@@ -116,10 +116,10 @@
                     <h1 class="text-black mb-3">Readership Reviews:</h1>
                     {% if logged_in %}
                     <form action="" method="post" role="form" novalidate>
-                        {{ form.csrf_token }}
+                        {{ new_review.csrf_token }}
                         <fieldset>
-                            {{ form.add_new(type="submit", class="btn btn-lg btn-primary",
-                            value=form.add_new.label.text)|safe }}
+                            {{ new_review.new_review(type="submit", class="btn btn-lg btn-primary",
+                            value=new_review.new_review.label.text)|safe }}
                         </fieldset>
                     </form>
                     {% endif %}
@@ -128,18 +128,18 @@
         </div>
     </div>
 
-    {% if reviews %}
-    {% for review in reviews %}
+    {% if user_reviews %}
+    {% for user, review in user_reviews %}
     <div class="row justify-content-center mt-3">
         <div class="col-sm-7">
             <div class="card bg-light">
                 <div class="card-body">
                     <div class="row">
                         <div class="col-sm-3">
-                            <img src="http://dummyimage.com/60x60/666/ffffff&text=No+Image"
-                                 class="img-rounded">
-                            <div class="review-block-name"><a href="#">nktailor</a></div>
-                            <div class="review-block-date">January 29, 2016<br/>1 day ago</div>
+                            <img src="{{ user.profile_pic }}"
+                                 class="img-rounded" width="60" height="60">
+                            <div class="review-block-name"><a href="#">{{ user.email }}</a></div>
+                            <div class="review-block-date">{{ review.time_stamp.year }}-{{ review.time_stamp.month }}-{{ review.time_stamp.day }}</div>
                         </div>
                         <div class="col-sm-9">
                             <div class="review-block-rate">
@@ -160,6 +160,15 @@
                                 {{ review.review_text }}
                             </div>
                         </div>
+                        {% if current_user_id == review.user_id %}
+                         <form action="" method="post" role="form" novalidate>
+                        {{ edit_review.csrf_token }}
+                        <fieldset>
+                            {{ edit_review.edit_review(type="submit", class="btn btn-lg btn-primary",
+                            value=edit_review.edit_review.label.text)|safe }}
+                        </fieldset>
+                    </form>
+                        {% endif %}
                     </div>
                     <hr/>
                 </div>

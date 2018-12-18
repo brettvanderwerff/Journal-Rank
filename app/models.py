@@ -14,27 +14,30 @@ class Journal(db.Model):
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), nullable=False, unique=True)
+    email = db.Column(db.String(64), nullable=False, unique=True)
     password = db.Column(db.String(64), nullable=False)
+    profile_pic = db.Column(db.String(64), default='/static/images/profile_pictures/default_avatar.png')
     review = db.relationship('Review', backref='user')
 
 class Review(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     review_rating = db.Column(db.Integer, nullable=False)
     review_text = db.Column(db.String(64))
+    time_stamp = db.Column(db.DateTime)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     journal_id = db.Column(db.Integer, db.ForeignKey('journal.id'))
 
 def create_db():
     '''
-    Builds the database by writing each row of the journal_list.csv to a sqlite database
+    Builds the database by writing each row of the journal_list.csv to a sqlite database. Should really only be needed
+    once to set up database upon initial deployment.
     '''
     print('Creating database...')
     db.create_all()
 
     # Populate Journals table
 
-    df = pd.read_csv('journal_list.csv', sep=';')
+    df = pd.read_csv('data/journal_list.csv', sep=';')
     df_drop_dup = df.drop_duplicates(['Title'])
     df_drop_na = df_drop_dup.dropna(subset=['Publisher'])
 

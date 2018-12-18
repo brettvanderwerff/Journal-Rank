@@ -3,17 +3,20 @@ from flask_wtf import FlaskForm
 from wtforms.validators import DataRequired, EqualTo, InputRequired
 
 class RegisterForm(FlaskForm):
-    username = StringField('username', validators=[DataRequired()])
+    email = StringField('email', validators=[DataRequired()])
     password = PasswordField('Password',
                              validators=[DataRequired(), EqualTo('confirm', message='Passwords must match')])
     confirm = PasswordField('Confirm Password')
     submit = SubmitField('Sign Me Up')
 
-class JournalInfo(FlaskForm):
-    add_new = SubmitField('Add New Review')
+class NewReview(FlaskForm):
+    new_review = SubmitField('Add New Review')
+
+class EditReview(FlaskForm):
+    edit_review = SubmitField('Edit')
 
 class LoginForm(FlaskForm):
-    username = StringField('username', validators=[DataRequired()])
+    email = StringField('email', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Log Me In')
 

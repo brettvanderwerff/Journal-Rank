@@ -10,7 +10,7 @@
                     {{ form.csrf_token }}
                     <h3 class="text-center mb-4">Register</h3>
                     <fieldset>
-                        {{ render_field(form.username, placeholder=form.username.label.text) }}
+                        {{ render_field(form.email, placeholder=form.email.label.text) }}
                         {{ render_field(form.password, placeholder=form.password.label.text) }}
                         {{ render_field(form.confirm, placeholder=form.confirm.label.text) }}
                         {{ form.submit(type="submit", class="btn btn-lg btn-primary btn-block",

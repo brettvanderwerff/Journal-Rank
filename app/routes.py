@@ -4,9 +4,10 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journal, User, Review
-from app.forms import LoginForm, RegisterForm, ReviewForm, JournalInfo
+from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
+from datetime import datetime
 
 
 @login_manager.user_loader
@@ -28,19 +29,31 @@ def journal_info(journal_name):
     data_dict['Journal Title'] = journal_data.title
     data_dict['Publisher'] = journal_data.publisher
     data_dict['Country'] = journal_data.country
-    form = JournalInfo()
+    new_review = NewReview()
+    edit_review = EditReview()
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
-    if len(reviews) == 0:
-        reviews = None
+    number_reviews = len(reviews)
 
-    if form.validate_on_submit():
+    if number_reviews == 0:
+        user_reviews = None
+
+    else:
+        users = [User.query.filter_by(id=review.user_id).first() for review in reviews]
+        user_reviews = zip(users, reviews)
+
+    if new_review.validate_on_submit():
         journal_name = journal_name.replace(' ', '_')
         return (redirect(url_for('new_review', journal_name=journal_name)))
 
+    current_user_id = int(current_user.get_id())
+
     return render_template('journal_info.html', data_dict=data_dict,
-                           logged_in=current_user.is_authenticated, form=form,
-                           reviews=reviews)
+                           logged_in=current_user.is_authenticated, new_review=new_review,
+                           edit_review=edit_review,
+                           user_reviews=user_reviews,
+                           number_reviews=number_reviews,
+                           current_user_id=current_user_id)
 
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
@@ -48,10 +61,16 @@ def journal_info(journal_name):
 def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
+    #ToDo only let user review once
+    #ToDo track the time a post was made
+    #ToDo allow users to edit posts
+    #ToDo rating div in css is too bread and messes the posts up
     if form.validate_on_submit():
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
-        review = Review(review_rating=form.rating.data, review_text=form.text.data, user=user, journal=journal)
+        current_time = datetime.now()
+        review = Review(review_rating=form.rating.data, review_text=form.text.data, time_stamp=current_time,
+                        user=user, journal=journal)
         db.session.add(review)
         db.session.commit()
         journal_name = journal_name.replace(' ', '_')
@@ -91,7 +110,7 @@ def table_result():
 
     def build_table(con, query_values):
         '''
-        Builds pandas dataframe from SQL query
+        Builds pandas dataframe from SQL query.
         :param con: database connection
         :param query_values: SQL arguments dictionary
         :return: Pandas dataframe
@@ -123,7 +142,7 @@ def table_result():
         df[column_name] = '<a href="{}/'.format(prefix) + \
                           df[column_name].str.replace(' ', '_') + '">' + \
                           df[column_name] + '</a>'
-        convert_nan_to_string = df.where((pd.notnull(df)), 'N/A')  # datatables will give error with NaN
+        convert_nan_to_string = df.where((pd.notnull(df)), 'N/A')  # datatables will give error if NaN are left here
         return convert_nan_to_string
 
     def build_json_response(df, query_string, table_length):
@@ -157,16 +176,16 @@ def login():
     form = LoginForm()
     error = None
     if form.validate_on_submit():
-        username = form.username.data
+        email = form.email.data
         password = form.password.data
-        user = User.query.filter_by(username=username).first()
-        if User.query.filter_by(username=username).first() != None:
+        user = User.query.filter_by(email=email).first()
+        if User.query.filter_by(email=email).first() != None:
             if check_password_hash(user.password, password):
                 login_user(user)
                 flash('Successfully logged in!')
                 return redirect(url_for('index'))
         else:
-            error = 'username or password is incorrect or does not exist'
+            error = 'email or password is incorrect or does not exist'
 
     return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
@@ -181,16 +200,16 @@ def logout():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
-    # ToDo change models to email instead of username enforce only .edu extension
+    # ToDo change models to email instead of email enforce only .edu extension
     form = RegisterForm()
     error = None
     if form.validate_on_submit():
-        username = form.username.data
+        email = form.email.data
         password = generate_password_hash(form.password.data)
-        if User.query.filter_by(username=username).first() != None:
+        if User.query.filter_by(email=email).first() != None:
             error = 'user already exits'
         else:
-            user = User(username=username, password=password)
+            user = User(email=email, password=password)
             db.session.add(user)
             db.session.commit()
             login_user(user)
@@ -199,9 +218,14 @@ def register():
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
 
-@app.route('/user_profile')
-def user_profile():
-    return render_template('user_profile.html', logged_in=current_user.is_authenticated)
+@app.route('/my_profile')
+def my_profile():
+    #ToDo update models to poink to profile pics in static
+    #ToDo allow users to upload images, use pillow to resize uploaded images
+    user = User.query.filter_by(id=current_user.get_id()).first()
+    profile_pic_url = user.profile_pic
+    return render_template('my_profile.html', logged_in=current_user.is_authenticated,
+                           profile_pic_url=profile_pic_url)
 
 
 @app.route('/about')
