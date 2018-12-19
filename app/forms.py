@@ -13,8 +13,8 @@ class NewReview(FlaskForm):
     submit = SubmitField('Add New Review')
 
 class EditReview(FlaskForm):
-    id = None
-    submit = SubmitField('Edit')
+    text = TextAreaField('Written Review')
+    submit = SubmitField('Save Edit')
 
 class LoginForm(FlaskForm):
     email = StringField('email', validators=[DataRequired()])

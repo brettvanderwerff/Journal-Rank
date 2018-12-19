@@ -23,6 +23,8 @@ def index():
 
 @app.route('/journal_info/<journal_name>', methods=['GET', 'POST'])
 def journal_info(journal_name):
+    current_user_id = int(current_user.get_id()) if current_user.get_id() else None
+
     journal_name = journal_name.replace('_', ' ')
     journal_data = Journal.query.filter_by(title=journal_name).first()
     data_dict = {}
@@ -30,7 +32,6 @@ def journal_info(journal_name):
     data_dict['Publisher'] = journal_data.publisher
     data_dict['Country'] = journal_data.country
     new_review = NewReview()
-    edit_review = EditReview()
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
     number_reviews = len(reviews)
@@ -40,31 +41,47 @@ def journal_info(journal_name):
 
     else:
         users = [User.query.filter_by(id=review.user_id).first() for review in reviews]
-        user_reviews = zip(users, reviews)
+        edit_buttons = []
+        for review in reviews:
+            if current_user_id == review.user_id:
+                edit_button_id = review.id
+                edit_buttons.append(edit_button_id)
+            else:
+                edit_buttons.append(None)
+
+        user_reviews = zip(users, reviews, edit_buttons)
 
     if new_review.validate_on_submit():
         journal_name = journal_name.replace(' ', '_')
         return (redirect(url_for('new_review', journal_name=journal_name)))
 
-
-    current_user_id = int(current_user.get_id()) if current_user.get_id() else None
-
     return render_template('journal_info.html', data_dict=data_dict,
                            logged_in=current_user.is_authenticated, new_review=new_review,
-                           edit_review=edit_review,
                            user_reviews=user_reviews,
                            number_reviews=number_reviews,
                            current_user_id=current_user_id)
 
-@app.route('/edit_review/<id>')
+
+@app.route('/edit_review/<id>', methods=['POST', 'GET'])
 @login_required
 def edit_reviw(id):
-    current_user_id = current_user.get_id()
-    review = Review(id=id)
+    current_user_id = int(current_user.get_id())
+    review = Review.query.filter_by(id=id).first()
     if review.user_id != current_user_id:
-        return 401
-    return review.review_text
+        return 'access denied'
+    else:
+        review_text = review.review_text
+        journal_data = Journal.query.filter_by(id=review.journal_id).first()
+        journal_name = journal_data.title
+        form = EditReview()
+        form.text.data = review_text
+        if form.validate_on_submit():
+            review.review_text = form.text.data
+            db.session.commit()
+            journal_name = journal_name.replace(' ', '_')
+            redirect(url_for('journal_info', journal_name=journal_name))
 
+    return render_template('edit_review.html', form=form, journal_name=journal_name, review_text=review_text)
 
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
@@ -72,9 +89,9 @@ def edit_reviw(id):
 def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
-    #ToDo only let user review once
-    #ToDo allow users to edit posts
-    #ToDo rating div in css is too bread and messes the posts up
+    # ToDo only let user review once
+    # ToDo allow users to edit posts
+    # ToDo rating div in css is too bread and messes the posts up
     if form.validate_on_submit():
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
@@ -232,8 +249,8 @@ def register():
 
 @app.route('/my_profile')
 def my_profile():
-    #ToDo update models to poink to profile pics in static
-    #ToDo allow users to upload images, use pillow to resize uploaded images
+    # ToDo update models to poink to profile pics in static
+    # ToDo allow users to upload images, use pillow to resize uploaded images
     user = User.query.filter_by(id=current_user.get_id()).first()
     profile_pic_url = user.profile_pic
     return render_template('my_profile.html', logged_in=current_user.is_authenticated,
