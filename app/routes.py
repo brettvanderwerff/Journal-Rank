@@ -1,4 +1,6 @@
 from flask import render_template, jsonify, request, flash, redirect, url_for
+from wtforms import TextAreaField, RadioField
+from wtforms.validators import InputRequired
 from app import app, login_manager, db
 import json
 import pandas as pd
@@ -35,6 +37,20 @@ def journal_info(journal_name):
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
     number_reviews = len(reviews)
+    avg_review = sum(review.review_rating for review in reviews) / number_reviews
+    avg_review_rounded = round(avg_review * 2) / 2
+    whole_stars = int(avg_review_rounded)
+    empty_stars = 5 - round(avg_review_rounded)
+    is_half_star = True if str(avg_review_rounded).endswith('.5') == True else False
+
+    def percent_reviews(star, number_reviews):
+        return round(sum([True for review in reviews if review.review_rating == star]) / number_reviews * 100)
+
+    five_star_percent = percent_reviews(5, number_reviews)
+    four_star_percent = percent_reviews(4, number_reviews)
+    three_star_percent = percent_reviews(3, number_reviews)
+    two_star_percent = percent_reviews(2, number_reviews)
+    one_star_percent = percent_reviews(1, number_reviews)
 
     if number_reviews == 0:
         user_reviews = None
@@ -59,7 +75,16 @@ def journal_info(journal_name):
                            logged_in=current_user.is_authenticated, new_review=new_review,
                            user_reviews=user_reviews,
                            number_reviews=number_reviews,
-                           current_user_id=current_user_id)
+                           current_user_id=current_user_id,
+                           avg_review_rounded=avg_review_rounded,
+                           whole_stars=whole_stars,
+                           is_half_star=is_half_star,
+                           empty_stars=empty_stars,
+                           five_star_percent=five_star_percent,
+                           four_star_percent=four_star_percent,
+                           three_star_percent=three_star_percent,
+                           two_star_percent=two_star_percent,
+                           one_star_percent=one_star_percent)
 
 
 @app.route('/edit_review/<id>', methods=['POST', 'GET'])
@@ -73,13 +98,17 @@ def edit_reviw(id):
         review_text = review.review_text
         journal_data = Journal.query.filter_by(id=review.journal_id).first()
         journal_name = journal_data.title
+        setattr(EditReview, 'text', TextAreaField('Written Review', default=review_text))
+        setattr(EditReview, 'rating', RadioField('rating', choices=[("5", "str5"), ("4", "str4"), ("3", "str3"),
+                                                                    ("2", "str2"), ("1", "str1")],
+                                                 validators=[InputRequired()]))
         form = EditReview()
-        form.text.data = review_text
         if form.validate_on_submit():
             review.review_text = form.text.data
+            review.review_rating = form.rating.data
             db.session.commit()
             journal_name = journal_name.replace(' ', '_')
-            redirect(url_for('journal_info', journal_name=journal_name))
+            return redirect(url_for('journal_info', journal_name=journal_name))
 
     return render_template('edit_review.html', form=form, journal_name=journal_name, review_text=review_text)
 
@@ -90,8 +119,7 @@ def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
     # ToDo only let user review once
-    # ToDo allow users to edit posts
-    # ToDo rating div in css is too bread and messes the posts up
+    # ToDo rating div in css is too broad and messes the posts up
     if form.validate_on_submit():
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
@@ -125,7 +153,7 @@ def table_result():
 
     def get_table_length(con, table):
         '''
-        Determines The length of a table within a databse
+        Determines The length of a table within a database
         :param db: the database uri
         :param table: the table name
         :return: the length of the table as a string
@@ -159,6 +187,9 @@ def table_result():
             query_values['start_index'],
             query_values['length']),
             con)
+        df = df.where((pd.notnull(df)), 'N/A')  # datatables will give error if NaN are left here
+        df['rating'] = df['rating'].apply(
+            lambda x: (round(x * 2) / 2) if type(x) == float else x)  # round rating to nearest .5
         return df
 
     def convert_to_href(column_name, df, prefix=''):
@@ -169,8 +200,7 @@ def table_result():
         df[column_name] = '<a href="{}/'.format(prefix) + \
                           df[column_name].str.replace(' ', '_') + '">' + \
                           df[column_name] + '</a>'
-        convert_nan_to_string = df.where((pd.notnull(df)), 'N/A')  # datatables will give error if NaN are left here
-        return convert_nan_to_string
+        return df
 
     def build_json_response(df, query_string, table_length):
         '''
@@ -251,10 +281,35 @@ def register():
 def my_profile():
     # ToDo update models to poink to profile pics in static
     # ToDo allow users to upload images, use pillow to resize uploaded images
-    user = User.query.filter_by(id=current_user.get_id()).first()
+    id = current_user.get_id()
+    return redirect(url_for('user_profile', id=id))
+
+
+@app.route('/user_profile/<id>/')
+def user_profile(id):
+    current_user_id = current_user.get_id()
+    is_current_user = True if current_user_id == id else False
+    user = User.query.filter_by(id=id).first()
+    user_email = user.email
     profile_pic_url = user.profile_pic
-    return render_template('my_profile.html', logged_in=current_user.is_authenticated,
-                           profile_pic_url=profile_pic_url)
+    reviews = Review.query.filter_by(user_id=id).all()
+    number_reviews = len(reviews)
+
+    if number_reviews == 0:
+        user_reviews = None
+    else:
+        users = [User.query.filter_by(id=review.user_id).first() for review in reviews]
+        if is_current_user:
+            edit_buttons = [review.id for review in reviews]
+
+        else:
+            edit_buttons = [None for review in reviews]
+        user_reviews = zip(users, reviews, edit_buttons)
+
+    return render_template('user_profile.html', logged_in=current_user.is_authenticated,
+                           profile_pic_url=profile_pic_url, user_email=user_email, user_reviews=user_reviews,
+                           number_reviews=number_reviews,
+                           is_current_user=is_current_user)
 
 
 @app.route('/about')

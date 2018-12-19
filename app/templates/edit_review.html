@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "render_field.html" import render_field %}
+{% from "render_field.html" import render_field, render_radio_fields%}
 {% block content %}
 <div class="container-fluid h-100">
     <div class="row h-100 justify-content-center align-items-center">
@@ -11,6 +11,7 @@
                         <h3 class="text-center mb-4">Edit Review For:</h3>
                         <h3 class="text-center mb-4">{{ journal_name }}</h3>
                         <fieldset>
+                            {{ render_radio_fields(form.rating) }}
                             {{ render_field(form.text, class="form-control z-depth-1", rows="3") }}
 
                             {{ form.submit(type="submit", class="btn btn-lg btn-primary btn-block",

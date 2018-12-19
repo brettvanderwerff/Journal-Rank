@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row mt-3">
+        <div class="col-sm-4">
+            <div class="card">
+                <div class="card-body">
+                    <div class="text-center">
+                        <h5 class="text-black">{{ user_email }}</h5>
+                        <img src="{{ profile_pic_url}}"
+                             class="avatar img-circle img-thumbnail" alt="avatar">
+                        {% if is_current_user %}
+                        <h6>Upload a different photo...</h6>
+                        <div>
+                            <button type="button" class="btn btn-primary">Change Avatar</button>
+                        </div>
+                        </hr><br>
+                        {% endif %}
+
+                        <ul class="list-group">
+                            <li class="list-group-item text-muted">Activity <i class="fa fa-dashboard fa-1x"></i></li>
+                            <li class="list-group-item text-right"><span
+                                    class="pull-left"><strong>Reviews</strong></span> {{ number_reviews }}
+                            </li>
+                        </ul>
+
+                    </div>
+                </div>
+            </div><!--/col-3-->
+        </div>
+        <div class="col-sm-8">
+            <div class="row mb-1">
+                <div class="col-sm-12 text-center">
+                    {% if is_current_user %}
+                    <h1 class="mt-5 text-white">My Reviews:</h1>
+                    {% else %}
+                    <h1 class="mt-5 text-white">User Reviews:</h1>
+                    {% endif %}
+                </div>
+            </div>
+            {% if user_reviews %}
+            {% for user, review, edit_button_id in user_reviews %}
+            <div class="row justify-content-center mt-3">
+                <div class="col-sm-7">
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-sm-3">
+                                    <img src="{{ user.profile_pic }}"
+                                         class="img-rounded" width="60" height="60">
+                                    <div class="review-block-name"><a href="/user_profile/{{ user.id }}">{{ user.email
+                                        }}</a></div>
+                                    <div class="review-block-date">{{ review.time_stamp.year }}-{{
+                                        review.time_stamp.month }}-{{ review.time_stamp.day }}
+                                    </div>
+                                </div>
+                                <div class="col-sm-9">
+                                    <div class="review-block-rate">
+                                        {% for x in range(review.review_rating) %}
+                                        <button type="button" class="btn btn-warning btn-xs"
+                                                aria-label="Left Align">
+                                            <i aria-hidden="true" class="fa fa-star"></i>
+                                        </button>
+                                        {% endfor %}
+                                        {% for x in range(5 - review.review_rating) %}
+                                        <button type="button" class="btn btn-default btn-grey btn-xs"
+                                                aria-label="Left Align">
+                                            <i aria-hidden="true" class="fa fa-star-o"></i>
+                                        </button>
+                                        {% endfor %}
+                                    </div>
+                                    <div class="review-block-description">
+                                        {{ review.review_text }}
+                                    </div>
+                                </div>
+                                {% if edit_button_id %}
+                                <button class="btn btn-info" id="{{ edit_button_id }}"
+                                        onclick="redirect(this.id, 'edit_review', 'user_profile')">Edit
+                                </button>
+                                {% endif %}
+
+                            </div>
+                            <hr/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

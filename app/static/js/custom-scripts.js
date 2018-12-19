@@ -29,9 +29,11 @@ $(document).ready(function(){
 
 // Redirect user to edit a post
 
-function redirect(button_id, target) {
+function redirect(button_id, target, current_endpoint) {
     let current_url = window.location.href
-    let url_prefix = current_url.split('journal_info')[0]
+    console.log(current_url)
+
+    let url_prefix = current_url.split(current_endpoint)[0]
     let new_endpoint = url_prefix + target + '/' + button_id
     window.location.replace(new_endpoint)
 }

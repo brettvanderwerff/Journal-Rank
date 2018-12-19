@@ -15,7 +15,7 @@ html, body {
 /* For Review Blocks */
 
 
-.fa-star,.fa-star-o{
+.fa-star,.fa-star-o, .fa-star-half-o{
 	color:orange;
 }
 .rating-num {
