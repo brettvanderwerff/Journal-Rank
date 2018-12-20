@@ -18,13 +18,10 @@ $(document).ready(function() {
 
 // Dynamic Review Submission Stars Logic
 
-$(document).ready(function(){
-//  Check Radio-box
-    $(".rating input:radio").attr("checked", false);
-    $('.rating input').click(function () {
-        $(".rating span").removeClass('checked');
-        $(this).parent().addClass('checked');
-    });
+$('.rating input').change(function () {
+  var $radio = $(this);
+  $('.rating .selected').removeClass('selected');
+  $radio.closest('label').addClass('selected');
 });
 
 // Redirect user to edit a post

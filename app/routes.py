@@ -1,4 +1,4 @@
-from flask import render_template, jsonify, request, flash, redirect, url_for
+from flask import render_template, jsonify, request, flash, redirect, url_for, abort
 from wtforms import TextAreaField, RadioField
 from wtforms.validators import InputRequired
 from app import app, login_manager, db
@@ -36,15 +36,19 @@ def journal_info(journal_name):
     new_review = NewReview()
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
+    user_has_reviewed = True if sum([current_user_id == review.user_id for review in reviews]) == 1 else False
     number_reviews = len(reviews)
-    avg_review = sum(review.review_rating for review in reviews) / number_reviews
+    avg_review = 0 if number_reviews == 0 else sum(review.review_rating for review in reviews) / number_reviews
     avg_review_rounded = round(avg_review * 2) / 2
     whole_stars = int(avg_review_rounded)
     empty_stars = 5 - round(avg_review_rounded)
     is_half_star = True if str(avg_review_rounded).endswith('.5') == True else False
 
     def percent_reviews(star, number_reviews):
-        return round(sum([True for review in reviews if review.review_rating == star]) / number_reviews * 100)
+        if number_reviews == 0:
+            return 0
+        else:
+            return round(sum([True for review in reviews if review.review_rating == star]) / number_reviews * 100)
 
     five_star_percent = percent_reviews(5, number_reviews)
     four_star_percent = percent_reviews(4, number_reviews)
@@ -84,7 +88,8 @@ def journal_info(journal_name):
                            four_star_percent=four_star_percent,
                            three_star_percent=three_star_percent,
                            two_star_percent=two_star_percent,
-                           one_star_percent=one_star_percent)
+                           one_star_percent=one_star_percent,
+                           user_has_reviewed=user_has_reviewed)
 
 
 @app.route('/edit_review/<id>', methods=['POST', 'GET'])
@@ -93,7 +98,7 @@ def edit_reviw(id):
     current_user_id = int(current_user.get_id())
     review = Review.query.filter_by(id=id).first()
     if review.user_id != current_user_id:
-        return 'access denied'
+        return abort(401)
     else:
         review_text = review.review_text
         journal_data = Journal.query.filter_by(id=review.journal_id).first()
@@ -117,6 +122,7 @@ def edit_reviw(id):
 @login_required
 def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
+    print(journal_name)
     form = ReviewForm()
     # ToDo only let user review once
     # ToDo rating div in css is too broad and messes the posts up

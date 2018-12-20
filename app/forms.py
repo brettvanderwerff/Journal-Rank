@@ -22,7 +22,7 @@ class LoginForm(FlaskForm):
 
 class ReviewForm(FlaskForm):
     rating = RadioField('rating', choices=[("5", "str5"), ("4", "str4"), ("3", "str3"), ("2", "str2"), ("1", "str1")],
-                        validators=[InputRequired()])
+                        validators=[InputRequired(message='Please choose a rating')])
     text = TextAreaField('Written Review')
     submit = SubmitField('Submit')
 

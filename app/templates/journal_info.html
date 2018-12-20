@@ -118,6 +118,9 @@
                 <div class="card-body">
                     <h1 class="text-black mb-3">Readership Reviews:</h1>
                     {% if logged_in %}
+                    {% if user_has_reviewed %}
+                    <button>Edit Your Review</button>
+                    {% endif %}
                     <form action="" method="post" role="form" novalidate>
                         {{ new_review.csrf_token }}
                         <fieldset>
