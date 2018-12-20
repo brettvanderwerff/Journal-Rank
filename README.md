@@ -3,7 +3,8 @@ Journal-Rank
 
 
 Work-in-progress website for reviewing academic journals. When finished will allow users to submit opinion reviews for academic journals.
-Far from complete, but does have basic, very unpolished functionality now. The WIP project can be set up on Linux by:
+Far from complete, but does have basic, very unpolished functionality now. Progress on this project can be tracked by
+ setting up on Linux with:
 
 1. Cloning repo.
 2. Installing requirements `$pip install -r requirements.txt`

@@ -27,7 +27,7 @@
                     <div class="row">
                         <div class="col-xs-12 col-md-6 text-center">
                             <h1 class="rating-num">{{ avg_review_rounded }}</h1>
-                            <div class="rating">
+                            <div class="rating-overall">
                                 {% for x in range(whole_stars) %}
                                 <i aria-hidden="true" class="fa fa-star"></i>
                                 {% endfor %}
@@ -116,11 +116,15 @@
         <div class="col-sm-7">
             <div class="card bg-light text-center">
                 <div class="card-body">
+                    {% if user_reviews %}
                     <h1 class="text-black mb-3">Readership Reviews:</h1>
+                    {% else %}
+                    <h4 class="text-black mb-3">There are no reviews for this journal yet</h4>
+                    {% endif %}
                     {% if logged_in %}
                     {% if user_has_reviewed %}
-                    <button>Edit Your Review</button>
-                    {% endif %}
+                        <button class="btn btn-info" id="{{ edit_button_id }}"onclick="redirect(this.id, 'edit_review', 'journal_info')">Edit Previous Review</button>
+                    {% else %}
                     <form action="" method="post" role="form" novalidate>
                         {{ new_review.csrf_token }}
                         <fieldset>
@@ -129,13 +133,14 @@
                         </fieldset>
                     </form>
                     {% endif %}
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 
     {% if user_reviews %}
-    {% for user, review, edit_button_id in user_reviews %}
+    {% for user, review in user_reviews %}
     <div class="row justify-content-center mt-3">
         <div class="col-sm-7">
             <div class="card bg-light">
@@ -166,10 +171,6 @@
                                 {{ review.review_text }}
                             </div>
                         </div>
-                        {% if edit_button_id %}
-                        <button class="btn btn-info" id="{{ edit_button_id }}"onclick="redirect(this.id, 'edit_review', 'journal_info')">Edit</button>
-                        {% endif %}
-
                     </div>
                     <hr/>
                 </div>

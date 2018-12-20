@@ -6,7 +6,7 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journal, User, Review
-from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview
+from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview, DeleteReview
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
@@ -37,6 +37,8 @@ def journal_info(journal_name):
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
     user_has_reviewed = True if sum([current_user_id == review.user_id for review in reviews]) == 1 else False
+    edit_button_id = Review.query.filter_by(journal_id=journal_data.id, user_id=current_user_id).first().id if user_has_reviewed else None
+    print(edit_button_id)
     number_reviews = len(reviews)
     avg_review = 0 if number_reviews == 0 else sum(review.review_rating for review in reviews) / number_reviews
     avg_review_rounded = round(avg_review * 2) / 2
@@ -61,22 +63,16 @@ def journal_info(journal_name):
 
     else:
         users = [User.query.filter_by(id=review.user_id).first() for review in reviews]
-        edit_buttons = []
-        for review in reviews:
-            if current_user_id == review.user_id:
-                edit_button_id = review.id
-                edit_buttons.append(edit_button_id)
-            else:
-                edit_buttons.append(None)
-
-        user_reviews = zip(users, reviews, edit_buttons)
+        user_reviews = zip(users, reviews)
 
     if new_review.validate_on_submit():
         journal_name = journal_name.replace(' ', '_')
         return (redirect(url_for('new_review', journal_name=journal_name)))
 
     return render_template('journal_info.html', data_dict=data_dict,
-                           logged_in=current_user.is_authenticated, new_review=new_review,
+                           logged_in=current_user.is_authenticated,
+                           edit_button_id=edit_button_id,
+                           new_review=new_review,
                            user_reviews=user_reviews,
                            number_reviews=number_reviews,
                            current_user_id=current_user_id,
@@ -107,25 +103,29 @@ def edit_reviw(id):
         setattr(EditReview, 'rating', RadioField('rating', choices=[("5", "str5"), ("4", "str4"), ("3", "str3"),
                                                                     ("2", "str2"), ("1", "str1")],
                                                  validators=[InputRequired()]))
-        form = EditReview()
-        if form.validate_on_submit():
-            review.review_text = form.text.data
-            review.review_rating = form.rating.data
+        edit_form = EditReview()
+        delete_form = DeleteReview()
+        if edit_form.validate_on_submit():
+            review.review_text = edit_form.text.data
+            review.review_rating = edit_form.rating.data
             db.session.commit()
             journal_name = journal_name.replace(' ', '_')
             return redirect(url_for('journal_info', journal_name=journal_name))
+        elif delete_form.validate_on_submit():
+            db.session.delete(review)
+            db.session.commit()
+            flash('Review Successfully Deleted')
+            return redirect(url_for('journal_info', journal_name=journal_name))
 
-    return render_template('edit_review.html', form=form, journal_name=journal_name, review_text=review_text)
+    return render_template('edit_review.html', edit_form=edit_form, journal_name=journal_name, review_text=review_text,
+                           delete_form=delete_form)
 
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
 @login_required
 def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
-    print(journal_name)
     form = ReviewForm()
-    # ToDo only let user review once
-    # ToDo rating div in css is too broad and messes the posts up
     if form.validate_on_submit():
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
@@ -285,7 +285,7 @@ def register():
 
 @app.route('/my_profile')
 def my_profile():
-    # ToDo update models to poink to profile pics in static
+    # ToDo update models to point to profile pics in static
     # ToDo allow users to upload images, use pillow to resize uploaded images
     id = current_user.get_id()
     return redirect(url_for('user_profile', id=id))
@@ -305,12 +305,13 @@ def user_profile(id):
         user_reviews = None
     else:
         users = [User.query.filter_by(id=review.user_id).first() for review in reviews]
+        journals = [Journal.query.filter_by(id=review.journal_id).first() for review in reviews]
         if is_current_user:
             edit_buttons = [review.id for review in reviews]
 
         else:
             edit_buttons = [None for review in reviews]
-        user_reviews = zip(users, reviews, edit_buttons)
+        user_reviews = zip(journals, users, reviews, edit_buttons)
 
     return render_template('user_profile.html', logged_in=current_user.is_authenticated,
                            profile_pic_url=profile_pic_url, user_email=user_email, user_reviews=user_reviews,

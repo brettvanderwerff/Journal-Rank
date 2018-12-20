@@ -40,11 +40,17 @@
                 </div>
             </div>
             {% if user_reviews %}
-            {% for user, review, edit_button_id in user_reviews %}
+            {% for journal, user, review, edit_button_id in user_reviews %}
             <div class="row justify-content-center mt-3">
                 <div class="col-sm-7">
                     <div class="card bg-light">
                         <div class="card-body">
+                            <div class="'row">
+                                <div class="col-sm-12 text-center">
+                                    {{ journal.title }}
+                                     <hr/>
+                                </div>
+                            </div>
                             <div class="row">
                                 <div class="col-sm-3">
                                     <img src="{{ user.profile_pic }}"
