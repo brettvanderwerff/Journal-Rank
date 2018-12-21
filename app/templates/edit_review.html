@@ -14,10 +14,11 @@
                             {{ render_radio_fields(edit_form.rating) }}
                             {{ render_field(edit_form.text, class="form-control z-depth-1", rows="3") }}
 
-                            {{ edit_form.submit(type="submit", class="btn btn-lg btn-primary btn-block",
-                            value=edit_form.submit.label.text)|safe }}
-                            {{ delete_form.submit(type="submit", class="btn btn-lg btn-warning btn-block",
-                            value=delete_form.submit.label.text)|safe }}
+                            {{ edit_form.edit_button(type="submit", class="btn btn-lg btn-primary btn-block",
+                            value=edit_form.edit_button.label.text)|safe }}
+
+                            {{ edit_form.delete_button(type="submit", class="btn btn-lg btn-warning btn-block",
+                            value=edit_form.delete_button.label.text)|safe }}
                             {% if error %}
                             <div class="alert alert-danger">
                                 <strong>Error: </strong> {{ error }}

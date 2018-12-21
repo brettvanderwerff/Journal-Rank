@@ -13,10 +13,10 @@ class NewReview(FlaskForm):
     submit = SubmitField('Add New Review')
 
 class EditReview(FlaskForm):
-    submit = SubmitField('Save Edit')
+    edit_button = SubmitField('Save Edit')
+    delete_button = SubmitField('Delete Review (Cannot be Undone)')
 
-class DeleteReview(FlaskForm):
-    submit = SubmitField('Delete Review (Cannot be Undone)')
+
 
 class LoginForm(FlaskForm):
     email = StringField('email', validators=[DataRequired()])

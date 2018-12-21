@@ -6,7 +6,7 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journal, User, Review
-from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview, DeleteReview
+from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
@@ -37,8 +37,8 @@ def journal_info(journal_name):
 
     reviews = Review.query.filter_by(journal_id=journal_data.id).all()
     user_has_reviewed = True if sum([current_user_id == review.user_id for review in reviews]) == 1 else False
-    edit_button_id = Review.query.filter_by(journal_id=journal_data.id, user_id=current_user_id).first().id if user_has_reviewed else None
-    print(edit_button_id)
+    edit_button_id = Review.query.filter_by(journal_id=journal_data.id,
+                                            user_id=current_user_id).first().id if user_has_reviewed else None
     number_reviews = len(reviews)
     avg_review = 0 if number_reviews == 0 else sum(review.review_rating for review in reviews) / number_reviews
     avg_review_rounded = round(avg_review * 2) / 2
@@ -97,28 +97,29 @@ def edit_reviw(id):
         return abort(401)
     else:
         review_text = review.review_text
+        review_rating = review.review_rating
         journal_data = Journal.query.filter_by(id=review.journal_id).first()
         journal_name = journal_data.title
         setattr(EditReview, 'text', TextAreaField('Written Review', default=review_text))
         setattr(EditReview, 'rating', RadioField('rating', choices=[("5", "str5"), ("4", "str4"), ("3", "str3"),
                                                                     ("2", "str2"), ("1", "str1")],
-                                                 validators=[InputRequired()]))
+                                                 validators=[InputRequired()], default=review_rating))
         edit_form = EditReview()
-        delete_form = DeleteReview()
         if edit_form.validate_on_submit():
-            review.review_text = edit_form.text.data
-            review.review_rating = edit_form.rating.data
-            db.session.commit()
-            journal_name = journal_name.replace(' ', '_')
-            return redirect(url_for('journal_info', journal_name=journal_name))
-        elif delete_form.validate_on_submit():
-            db.session.delete(review)
-            db.session.commit()
-            flash('Review Successfully Deleted')
-            return redirect(url_for('journal_info', journal_name=journal_name))
+            if edit_form.edit_button.data:
+                review.review_text = edit_form.text.data
+                review.review_rating = edit_form.rating.data
+                db.session.commit()
+                journal_name = journal_name.replace(' ', '_')
+                return redirect(url_for('journal_info', journal_name=journal_name))
 
-    return render_template('edit_review.html', edit_form=edit_form, journal_name=journal_name, review_text=review_text,
-                           delete_form=delete_form)
+            elif edit_form.delete_button.data:
+                db.session.delete(review)
+                db.session.commit()
+                flash('Review Successfully Deleted')
+                return redirect(url_for('journal_info', journal_name=journal_name))
+
+    return render_template('edit_review.html', edit_form=edit_form, journal_name=journal_name, review_text=review_text)
 
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
@@ -127,6 +128,7 @@ def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
     if form.validate_on_submit():
+        print(form.rating.data)
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
         current_time = datetime.now()
@@ -176,23 +178,23 @@ def table_result():
         :param query_values: SQL arguments dictionary
         :return: Pandas dataframe
         '''
-        # ToDo this needs to be paramaterized
         df = pd.read_sql_query("SELECT title, country, publisher, rating FROM "
                                "(SELECT title, country, publisher, AVG(review_rating) AS rating FROM journal "
                                "LEFT JOIN review ON journal.id = review.journal_id "
                                "GROUP BY title "
                                "ORDER BY {} {}) "
-                               "WHERE (title LIKE '%{}%' OR publisher LIKE '%{}%' OR country LIKE '%{}%') "
+                               "WHERE (title LIKE ? OR publisher LIKE ? OR country LIKE ?) "
                                "LIMIT {},{};"
                                "".format(
             query_values['sort_column'],
             query_values['sort_dir'],
-            query_values['search_term'],
-            query_values['search_term'],
-            query_values['search_term'],
             query_values['start_index'],
             query_values['length']),
-            con)
+            params=('%' + query_values['search_term'] + '%',
+                    '%' + query_values['search_term'] + '%',
+                    '%' + query_values['search_term'] + '%',),
+            con=con)
+
         df = df.where((pd.notnull(df)), 'N/A')  # datatables will give error if NaN are left here
         df['rating'] = df['rating'].apply(
             lambda x: (round(x * 2) / 2) if type(x) == float else x)  # round rating to nearest .5
@@ -206,6 +208,7 @@ def table_result():
         df[column_name] = '<a href="{}/'.format(prefix) + \
                           df[column_name].str.replace(' ', '_') + '">' + \
                           df[column_name] + '</a>'
+        print(df)
         return df
 
     def build_json_response(df, query_string, table_length):

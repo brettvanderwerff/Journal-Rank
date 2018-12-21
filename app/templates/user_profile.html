@@ -33,9 +33,17 @@
             <div class="row mb-1">
                 <div class="col-sm-12 text-center">
                     {% if is_current_user %}
+                    {% if user_reviews %}
                     <h1 class="mt-5 text-white">My Reviews:</h1>
                     {% else %}
+                    <h1 class="mt-5 text-white">You have no reviews yet</h1>
+                    {% endif %}
+                    {% else %}
+                    {% if user_reviews %}
                     <h1 class="mt-5 text-white">User Reviews:</h1>
+                    {% else %}
+                    <h1 class="mt-5 text-white">User has no reviews yet</h1>
+                    {% endif %}
                     {% endif %}
                 </div>
             </div>
@@ -47,8 +55,8 @@
                         <div class="card-body">
                             <div class="'row">
                                 <div class="col-sm-12 text-center">
-                                    {{ journal.title }}
-                                     <hr/>
+                                    <a href="/journal_info/{{ journal.title | replace(' ', '_') }}">{{ journal.title}}</a>
+                                    <hr/>
                                 </div>
                             </div>
                             <div class="row">
@@ -63,21 +71,25 @@
                                 </div>
                                 <div class="col-sm-9">
                                     <div class="review-block-rate">
-                                        {% for x in range(review.review_rating) %}
-                                        <button type="button" class="btn btn-warning btn-xs"
-                                                aria-label="Left Align">
-                                            <i aria-hidden="true" class="fa fa-star"></i>
-                                        </button>
-                                        {% endfor %}
-                                        {% for x in range(5 - review.review_rating) %}
-                                        <button type="button" class="btn btn-default btn-grey btn-xs"
-                                                aria-label="Left Align">
-                                            <i aria-hidden="true" class="fa fa-star-o"></i>
-                                        </button>
-                                        {% endfor %}
-                                    </div>
-                                    <div class="review-block-description">
-                                        {{ review.review_text }}
+                                        <div class="review-block-rate">
+                                            <div style="font-size: 30px;">
+                                                {% for x in range(review.review_rating) %}
+                                                <span class="fa fa-star"></span>
+                                                {% endfor %}
+                                                {% for x in range(5 - review.review_rating) %}
+                                                <span class="fa fa-star-o"></span>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% if review.review_text == '' %}
+                                        <div class="review-block-description">
+                                            <p class="font-italic">no review text provided</p>
+                                        </div>
+                                        {% else %}
+                                        <div class="review-block-description">
+                                            {{ review.review_text }}
+                                        </div>
+                                        {% endif %}
                                     </div>
                                 </div>
                                 {% if edit_button_id %}
