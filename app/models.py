@@ -15,6 +15,7 @@ class Journal(db.Model):
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(64), nullable=False, unique=True)
+    email_confirmed = db.Column(db.Integer, nullable=False, default=0)
     password = db.Column(db.String(64), nullable=False)
     profile_pic = db.Column(db.String(64), default='/static/images/profile_pictures/default_avatar.png')
     review = db.relationship('Review', backref='user')

@@ -1,7 +1,7 @@
 from flask import render_template, jsonify, request, flash, redirect, url_for, abort
 from wtforms import TextAreaField, RadioField
 from wtforms.validators import InputRequired
-from app import app, login_manager, db
+from app import app, login_manager, db, serial, mail
 import json
 import pandas as pd
 import sqlite3
@@ -13,6 +13,10 @@ from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
 from PIL import Image
 import random
+from itsdangerous import  SignatureExpired
+from flask_mail import Message
+
+
 
 
 @login_manager.user_loader
@@ -131,7 +135,6 @@ def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
     if form.validate_on_submit():
-        print(form.rating.data)
         user = User.query.filter_by(id=current_user.get_id()).first()
         journal = Journal.query.filter_by(title=journal_name).first()
         current_time = datetime.now()
@@ -211,7 +214,6 @@ def table_result():
         df[column_name] = '<a href="{}/'.format(prefix) + \
                           df[column_name].str.replace(' ', '_') + '">' + \
                           df[column_name] + '</a>'
-        print(df)
         return df
 
     def build_json_response(df, query_string, table_length):
@@ -281,12 +283,29 @@ def register():
                 user = User(email=email, password=password)
                 db.session.add(user)
                 db.session.commit()
-                login_user(user)
-                flash('Successfully registered and logged in!')
+                flash('Successfully registered, please check your email for a confirmation link!')
+                token = serial.dumps(email, salt='email-confirm')
+                msg = Message('journal-rank email confirmation',
+                              sender='brett.vanderwerff@gmail.com',
+                              recipients=[email])
+
+                confirm_url = 'http://127.0.0.1:5000/email_confirm/' + str(token)
+                msg.body = 'Please click the link to confirm your email address: {}'.format(confirm_url)
+                #mail.send(msg)
                 return redirect(url_for('index'))
         else:
             error = 'email must have .edu extension'
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
+
+@app.route('/email_confirm/<token>')
+def email_confirm(token):
+    try:
+        token = serial.loads(token, salt='email-confirm', max_age=60)
+
+    except SignatureExpired:
+        return 'the token is expired'
+
+    return 'email confirmed'
 
 
 @app.route('/my_profile')
