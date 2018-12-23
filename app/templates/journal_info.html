@@ -126,11 +126,7 @@
                     <h4 class="text-black mb-3">There are no reviews for this journal yet</h4>
                     {% endif %}
                     {% if logged_in %}
-                    {% if user_has_reviewed %}
-                    <button class="btn btn-info" id="{{ edit_button_id }}"
-                            onclick="redirect(this.id, 'edit_review', 'journal_info')">Edit Previous Review
-                    </button>
-                    {% else %}
+                    {% if not user_has_reviewed %}
                     <form action="" method="post" role="form" novalidate>
                         {{ new_review.csrf_token }}
                         <fieldset>
@@ -160,6 +156,13 @@
                             <div class="review-block-date">{{ review.time_stamp.year }}-{{ review.time_stamp.month }}-{{
                                 review.time_stamp.day }}
                             </div>
+                            {% if current_user_id == review.user_id %}
+                            <div>
+                                <button class="btn btn-info" id="{{ edit_button_id }}"
+                                        onclick="redirect(this.id, 'edit_review', 'journal_info')">Edit
+                                </button>
+                            </div>
+                            {% endif %}
                         </div>
                         <div class="col-sm-9">
                             <div class="review-block-rate">

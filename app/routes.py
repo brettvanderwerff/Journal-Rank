@@ -6,10 +6,13 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journal, User, Review
-from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview
+from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview, PictureForm
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
+from PIL import Image
+import random
 
 
 @login_manager.user_loader
@@ -294,7 +297,7 @@ def my_profile():
     return redirect(url_for('user_profile', id=id))
 
 
-@app.route('/user_profile/<id>/')
+@app.route('/user_profile/<id>/', methods=['GET', 'POST'])
 def user_profile(id):
     current_user_id = current_user.get_id()
     is_current_user = True if current_user_id == id else False
@@ -303,6 +306,7 @@ def user_profile(id):
     profile_pic_url = user.profile_pic
     reviews = Review.query.filter_by(user_id=id).all()
     number_reviews = len(reviews)
+    form = PictureForm()
 
     if number_reviews == 0:
         user_reviews = None
@@ -316,10 +320,24 @@ def user_profile(id):
             edit_buttons = [None for review in reviews]
         user_reviews = zip(journals, users, reviews, edit_buttons)
 
+    if form.validate_on_submit():
+        file = form.picture.data
+        filename = secure_filename(file.filename)
+        filename_with_prefix = str(random.randint(1,10**6)) + filename
+        save_dir = 'app/static/images/profile_pictures/' + filename_with_prefix
+        image = Image.open(file)
+        image = image.resize((200,200))
+        image.save(save_dir)
+        dir_for_db = '/static/images/profile_pictures/' + filename_with_prefix
+        user.profile_pic = dir_for_db
+        db.session.commit()
+        return redirect(url_for('user_profile', id=id))
+
     return render_template('user_profile.html', logged_in=current_user.is_authenticated,
                            profile_pic_url=profile_pic_url, user_email=user_email, user_reviews=user_reviews,
                            number_reviews=number_reviews,
-                           is_current_user=is_current_user)
+                           is_current_user=is_current_user,
+                           form=form)
 
 
 @app.route('/about')
