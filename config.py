@@ -14,5 +14,5 @@ configurations['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 configurations['MAIL_SERVER'] = 'smtp.gmail.com'
 configurations['MAIL_PORT'] = 465
 configurations['MAIL_USE_SSL'] = True
-configurations['MAIL_USERNAME'] = 'you@google.com'
-configurations['MAIL_PASSWORD'] = 'GooglePasswordHere'
+configurations['MAIL_USERNAME'] = 'your email here'
+configurations['MAIL_PASSWORD'] = 'your password here'

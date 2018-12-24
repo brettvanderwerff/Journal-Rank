@@ -9,7 +9,8 @@ setting up on Linux with the following:
 1. Cloning repo.
 2. Installing requirements `$pip install -r requirements.txt`
 3. Setting Flask environment variable: `$export FLASK_APP=journal-rank.py`
-4. Running the Flask app `$flask run`
+4. Add gmail username and password to config.py (optional, but required for login, will require allowing your gmail to use less secure apps https://support.google.com/accounts/answer/6010255?hl=en)
+5. Running the Flask app `$flask run`
 
 Which launches the landing page:
 

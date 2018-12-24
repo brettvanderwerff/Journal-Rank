@@ -6,7 +6,8 @@ import json
 import pandas as pd
 import sqlite3
 from app.models import Journal, User, Review
-from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview, PictureForm
+from app.forms import LoginForm, RegisterForm, ReviewForm, NewReview, EditReview, PictureForm, ResendConfirmation, \
+    RequestPasswordReset, PasswordReset
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from flask_login import login_user, login_required, current_user, logout_user
@@ -15,8 +16,7 @@ from PIL import Image
 import random
 from itsdangerous import  SignatureExpired
 from flask_mail import Message
-
-
+from config import configurations
 
 
 @login_manager.user_loader
@@ -252,13 +252,38 @@ def login():
         user = User.query.filter_by(email=email).first()
         if User.query.filter_by(email=email).first() != None:
             if check_password_hash(user.password, password):
-                login_user(user)
-                flash('Successfully logged in!')
-                return redirect(url_for('index'))
+                if user.email_confirmed == 0:
+                    flash('email confirmation required')
+                    user_id = user.id
+                    return redirect(url_for('resend_confirmation', user_id=user_id))
+                else:
+                    login_user(user)
+                    flash('Successfully logged in!')
+                    return redirect(url_for('index'))
         else:
             error = 'email or password is incorrect or does not exist'
 
     return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
+
+@app.route('/resend_confirmation/<user_id>', methods = ['GET', 'POST'])
+@login_required
+def resend_confirmation(user_id):
+    form= ResendConfirmation()
+    if form.validate_on_submit():
+        user = User.query.filter_by(id=user_id).first()
+        email = user.email
+        token = serial.dumps(email, salt='email-confirm')
+        msg = Message('journal-rank email confirmation',
+                      sender=configurations['MAIL_USERNAME'],
+                      recipients=[email])
+
+        confirm_url = url_for('email_confirm', token=token, _external=True)
+        msg.body = 'Please click the link to confirm your email address: {}'.format(confirm_url)
+        mail.send(msg)
+        flash('please check your email for a confirmation link!')
+        return redirect(url_for('index'))
+
+    return render_template('resend_confirmation.html', form=form)
 
 
 @app.route('/logout')
@@ -286,12 +311,12 @@ def register():
                 flash('Successfully registered, please check your email for a confirmation link!')
                 token = serial.dumps(email, salt='email-confirm')
                 msg = Message('journal-rank email confirmation',
-                              sender='brett.vanderwerff@gmail.com',
+                              sender=configurations['MAIL_USERNAME'],
                               recipients=[email])
 
-                confirm_url = 'http://127.0.0.1:5000/email_confirm/' + str(token)
+                confirm_url = url_for('email_confirm', token=token, _external=True)
                 msg.body = 'Please click the link to confirm your email address: {}'.format(confirm_url)
-                #mail.send(msg)
+                mail.send(msg)
                 return redirect(url_for('index'))
         else:
             error = 'email must have .edu extension'
@@ -300,12 +325,57 @@ def register():
 @app.route('/email_confirm/<token>')
 def email_confirm(token):
     try:
-        token = serial.loads(token, salt='email-confirm', max_age=60)
-
+        token = serial.loads(token, salt='email-confirm', max_age=3600)
+        user = User.query.filter_by(email=token).first()
+        user.email_confirmed = 1
+        db.session.commit()
+        flash('email is now confirmed please login')
+        return redirect(url_for('login'))
+    #ToDo add fancier expiration page
     except SignatureExpired:
         return 'the token is expired'
 
-    return 'email confirmed'
+@app.route('/request_password_reset', methods=['GET', 'POST'])
+def request_password_reset():
+    error = None
+    form = RequestPasswordReset()
+    if form.validate_on_submit():
+        email = form.email.data
+        if User.query.filter_by(email=email).first() == None:
+            error = 'user does not exist'
+        else:
+            flash('Please check your email for a password reset link')
+            token = serial.dumps(email, salt='password-reset')
+            msg = Message('journal-rank password reset',
+                          sender=configurations['MAIL_USERNAME'],
+                          recipients=[email])
+
+            reset_url = url_for('password_reset', token=token, _external=True)
+            msg.body = 'Please click the link to reset your password: {}'.format(reset_url)
+            mail.send(msg)
+            return redirect(url_for('index'))
+
+    return render_template('request_password_reset.html', form=form, error=error)
+
+@app.route('/password_reset/<token>', methods=['GET', 'POST'])
+def password_reset(token):
+    try:
+        token = serial.loads(token, salt='password-reset', max_age=3600)
+        form = PasswordReset()
+        if form.validate_on_submit():
+            user = User.query.filter_by(email=token).first()
+            user.password = generate_password_hash(form.password.data)
+            db.session.commit()
+            login_user(user)
+            flash('Password successfully changed')
+            return redirect(url_for('index'))
+
+        return render_template('password_reset.html', form=form)
+
+    #ToDo add fancier expiration page
+    except SignatureExpired:
+        return 'the token is expired'
+
 
 
 @app.route('/my_profile')

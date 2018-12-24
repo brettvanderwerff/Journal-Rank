@@ -10,6 +10,21 @@ class RegisterForm(FlaskForm):
     confirm = PasswordField('Confirm Password')
     submit = SubmitField('Sign Me Up')
 
+class RequestPasswordReset(FlaskForm):
+    email = StringField('email', validators=[DataRequired()])
+    submit = SubmitField('Send Password Reset Link')
+
+class PasswordReset(FlaskForm):
+    password = PasswordField('New Password',
+                             validators=[DataRequired(), EqualTo('confirm', message='Passwords must match')])
+    confirm = PasswordField('Confirm Password')
+    submit = SubmitField('Reset Password')
+
+
+
+class ResendConfirmation(FlaskForm):
+    submit = SubmitField('Resend Confirmation link')
+
 class NewReview(FlaskForm):
     submit = SubmitField('Add New Review')
 
