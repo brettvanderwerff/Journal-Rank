@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container-fluid h-100">
+    <div class="row h-100 justify-content-center align-items-center text-center">
+        <div class="col-sm-6">
+            <div class="card card-body">
+                {%if type == 'email_confirm'%}
+                <h3 class="text-center mb-4">Confirm Email Link Expired.</h3>
+                <a class="mb-3" href="/resend_confirmation">Resend link</a>
+                {% elif type == 'password_confirm'%}
+                <h3 class="text-center mb-4">Password Change Link Expired.</h3>
+                <a class="mb-3" href="/request_password_reset">Click for new link</a>
+                {% endif %}
+                <div>
+                    <img class="img-responsive" src="/static/images/sad.png" width="200" height="200">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

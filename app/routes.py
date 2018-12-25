@@ -1,6 +1,6 @@
 from flask import render_template, jsonify, request, flash, redirect, url_for, abort
-from wtforms import TextAreaField, RadioField
-from wtforms.validators import InputRequired
+from wtforms import TextAreaField, RadioField, StringField
+from wtforms.validators import InputRequired, DataRequired
 from app import app, login_manager, db, serial, mail
 import json
 import pandas as pd
@@ -14,7 +14,7 @@ from flask_login import login_user, login_required, current_user, logout_user
 from datetime import datetime
 from PIL import Image
 import random
-from itsdangerous import  SignatureExpired
+from itsdangerous import SignatureExpired
 from flask_mail import Message
 from config import configurations
 
@@ -126,7 +126,8 @@ def edit_reviw(id):
                 flash('Review Successfully Deleted')
                 return redirect(url_for('journal_info', journal_name=journal_name))
 
-    return render_template('edit_review.html', edit_form=edit_form, journal_name=journal_name, review_text=review_text)
+    return render_template('edit_review.html', edit_form=edit_form, journal_name=journal_name, review_text=review_text,
+                           logged_in=current_user.is_authenticated)
 
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
@@ -247,43 +248,45 @@ def login():
     form = LoginForm()
     error = None
     if form.validate_on_submit():
+        print('validate')
         email = form.email.data
         password = form.password.data
         user = User.query.filter_by(email=email).first()
-        if User.query.filter_by(email=email).first() != None:
-            if check_password_hash(user.password, password):
-                if user.email_confirmed == 0:
-                    flash('email confirmation required')
-                    user_id = user.id
-                    return redirect(url_for('resend_confirmation', user_id=user_id))
-                else:
-                    login_user(user)
-                    flash('Successfully logged in!')
-                    return redirect(url_for('index'))
+        if User.query.filter_by(email=email).first() != None and check_password_hash(user.password, password):
+            if user.email_confirmed == 0:
+                flash('email confirmation required')
+                return redirect(url_for('resend_confirmation'))
+            else:
+                login_user(user)
+                flash('Successfully logged in!')
+                return redirect(url_for('index'))
         else:
             error = 'email or password is incorrect or does not exist'
 
     return render_template('login.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
-@app.route('/resend_confirmation/<user_id>', methods = ['GET', 'POST'])
-@login_required
-def resend_confirmation(user_id):
-    form= ResendConfirmation()
+
+@app.route('/resend_confirmation', methods=['GET', 'POST'])
+def resend_confirmation():
+    form = ResendConfirmation()
+    error = None
     if form.validate_on_submit():
-        user = User.query.filter_by(id=user_id).first()
-        email = user.email
-        token = serial.dumps(email, salt='email-confirm')
-        msg = Message('journal-rank email confirmation',
-                      sender=configurations['MAIL_USERNAME'],
-                      recipients=[email])
+        email = form.email.data
+        if User.query.filter_by(email=email).first() != None:
+            token = serial.dumps(email, salt='email-confirm')
+            msg = Message('journal-rank email confirmation',
+                          sender=configurations['MAIL_USERNAME'],
+                          recipients=[email])
 
-        confirm_url = url_for('email_confirm', token=token, _external=True)
-        msg.body = 'Please click the link to confirm your email address: {}'.format(confirm_url)
-        mail.send(msg)
-        flash('please check your email for a confirmation link!')
-        return redirect(url_for('index'))
+            confirm_url = url_for('email_confirm', token=token, _external=True)
+            msg.body = 'Please click the link to confirm your email address: {}'.format(confirm_url)
+            mail.send(msg)
+            flash('please check your email for a confirmation link!')
+            return redirect(url_for('index'))
+        else:
+            error = 'that email address is not found in our records'
 
-    return render_template('resend_confirmation.html', form=form)
+    return render_template('resend_confirmation.html', form=form, logged_in=current_user.is_authenticated, error=error)
 
 
 @app.route('/logout')
@@ -322,18 +325,20 @@ def register():
             error = 'email must have .edu extension'
     return render_template('register.html', form=form, error=error, logged_in=current_user.is_authenticated)
 
+
 @app.route('/email_confirm/<token>')
 def email_confirm(token):
     try:
-        token = serial.loads(token, salt='email-confirm', max_age=3600)
+        token = serial.loads(token, salt='email-confirm', max_age=30)
         user = User.query.filter_by(email=token).first()
         user.email_confirmed = 1
         db.session.commit()
         flash('email is now confirmed please login')
         return redirect(url_for('login'))
-    #ToDo add fancier expiration page
+
     except SignatureExpired:
-        return 'the token is expired'
+        return redirect(url_for('token_expired', type='email_confirm'))
+
 
 @app.route('/request_password_reset', methods=['GET', 'POST'])
 def request_password_reset():
@@ -355,16 +360,19 @@ def request_password_reset():
             mail.send(msg)
             return redirect(url_for('index'))
 
-    return render_template('request_password_reset.html', form=form, error=error)
+    return render_template('request_password_reset.html', form=form, error=error,
+                           logged_in=current_user.is_authenticated)
+
 
 @app.route('/password_reset/<token>', methods=['GET', 'POST'])
 def password_reset(token):
     try:
-        token = serial.loads(token, salt='password-reset', max_age=3600)
+        token = serial.loads(token, salt='password-reset', max_age=30)
         form = PasswordReset()
         if form.validate_on_submit():
             user = User.query.filter_by(email=token).first()
             user.password = generate_password_hash(form.password.data)
+            user.email_confirmed = 1
             db.session.commit()
             login_user(user)
             flash('Password successfully changed')
@@ -372,10 +380,8 @@ def password_reset(token):
 
         return render_template('password_reset.html', form=form)
 
-    #ToDo add fancier expiration page
     except SignatureExpired:
-        return 'the token is expired'
-
+        return redirect(url_for('token_expired', type='password_confirm'))
 
 
 @app.route('/my_profile')
@@ -388,6 +394,7 @@ def my_profile():
 
 @app.route('/user_profile/<id>/', methods=['GET', 'POST'])
 def user_profile(id):
+    error=None
     current_user_id = current_user.get_id()
     is_current_user = True if current_user_id == id else False
     user = User.query.filter_by(id=id).first()
@@ -410,31 +417,50 @@ def user_profile(id):
         user_reviews = zip(journals, users, reviews, edit_buttons)
 
     if form.validate_on_submit():
-        file = form.picture.data
-        filename = secure_filename(file.filename)
-        filename_with_prefix = str(random.randint(1,10**6)) + filename
-        save_dir = 'app/static/images/profile_pictures/' + filename_with_prefix
-        image = Image.open(file)
-        image = image.resize((200,200))
-        image.save(save_dir)
-        dir_for_db = '/static/images/profile_pictures/' + filename_with_prefix
-        user.profile_pic = dir_for_db
-        db.session.commit()
-        return redirect(url_for('user_profile', id=id))
+        if form.picture.data != None:
+            file = form.picture.data
+            filename = secure_filename(file.filename)
+            filename_with_prefix = str(random.randint(1, 10 ** 6)) + filename
+            save_dir = 'app/static/images/profile_pictures/' + filename_with_prefix
+            image = Image.open(file)
+            image = image.resize((200, 200))
+            image.save(save_dir)
+            dir_for_db = '/static/images/profile_pictures/' + filename_with_prefix
+            user.profile_pic = dir_for_db
+            db.session.commit()
+            return redirect(url_for('user_profile', id=id))
+        else:
+            print('error')
+            error = 'upload avatar pic before submitting'
 
     return render_template('user_profile.html', logged_in=current_user.is_authenticated,
                            profile_pic_url=profile_pic_url, user_email=user_email, user_reviews=user_reviews,
                            number_reviews=number_reviews,
                            is_current_user=is_current_user,
-                           form=form)
+                           form=form,
+                           error=error)
+
+
+@app.route('/token_expired/<type>')
+def token_expired(type):
+    # ToDo add legic to let user click on link to send another reset/confirmation link
+    return render_template('token_expired.html', type=type, logged_in=current_user.is_authenticated)
 
 
 @app.route('/about')
 def about():
     return render_template('about.html', logged_in=current_user.is_authenticated)
 
+@app.route('/help')
+def help():
+    return render_template('help.html', logged_in=current_user.is_authenticated)
+
+@app.route('/test')
+def test():
+    return render_template('test.html', logged_in=current_user.is_authenticated)
+
 
 @app.errorhandler(401)
 def access_denied(e):
     flash('You need to register or be logged in to do that :(')
-    return render_template('401.html')
+    return render_template('401.html', logged_in=current_user.is_authenticated)

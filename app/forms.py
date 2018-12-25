@@ -23,6 +23,7 @@ class PasswordReset(FlaskForm):
 
 
 class ResendConfirmation(FlaskForm):
+    email = StringField('email', validators=[DataRequired()])
     submit = SubmitField('Resend Confirmation link')
 
 class NewReview(FlaskForm):
@@ -33,8 +34,8 @@ class EditReview(FlaskForm):
     delete_button = SubmitField('Delete Review (Cannot be Undone)')
 
 class PictureForm(FlaskForm):
-    picture = FileField('Upload Avatar', validators=[FileAllowed(upload_set=['jpg', 'png'])])
-    submit = SubmitField('Change Avatar')
+    picture = FileField('Browse Files', validators=[FileAllowed(upload_set=['jpg', 'png', 'jpeg'])])
+    submit = SubmitField('Submit Avatar')
 
 class LoginForm(FlaskForm):
     email = StringField('email', validators=[DataRequired()])
