@@ -1,10 +1,11 @@
 # Journal-Rank
-Journal-Rank
+Journal-Rank is a work-in-progress website that allows users to submit opinion reviews for academic journals.
 
+A pilot version of this project is live at:
+www.journal-rank.com
 
-Work-in-progress website that allows users to submit opinion reviews for academic journals.
-Far from complete, but does have basic, unpolished functionality now. Progress on this project can be tracked by
-setting up on Linux with the following:
+Progress on this project can be tracked by
+setting up the repo on Linux with the following:
 
 1. Cloning repo.
 2. Installing requirements `$pip install -r requirements.txt`
