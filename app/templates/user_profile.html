@@ -6,20 +6,20 @@
             <div class="card">
                 <div class="card-body">
                     <div class="text-center">
-                        <h5 class="text-black">{{ user_email }}</h5>
+                        <h5 class="text-black"><a href="mailto: {{ user_email }}">{{ user_email }}</a></h5>
                         <img src="{{ profile_pic_url}}"
                              class="avatar img-circle img-thumbnail" alt="avatar" width="200" height="200">
                         {% if is_current_user %}
                         <h6 class="mb-2 mt-2">Upload a different avatar pic...</h6>
-                         <form action="" method="post" role="form" enctype="multipart/form-data" novalidate>
-                        {{ form.csrf_token }}
-                         <div class="mb-3">
-                        {{ form.picture() }}
-                         </div>
-                             <div>
-                                 {{ form.submit() }}
-                             </div>
-                         </form>
+                        <form action="" method="post" role="form" enctype="multipart/form-data" novalidate>
+                            {{ form.csrf_token }}
+                            <div class="mb-3">
+                                {{ form.picture() }}
+                            </div>
+                            <div>
+                                {{ form.submit() }}
+                            </div>
+                        </form>
                         {% if error %}
                         <div class="alert alert-danger">
                             <strong>Error: </strong> {{ error }}
@@ -40,37 +40,36 @@
             </div><!--/col-3-->
         </div>
         <div class="col-sm-8">
-            <div class="row mb-1">
-                <div class="col-sm-12 text-center">
-                    {% if is_current_user %}
-                    {% if user_reviews %}
-                    <h1 class="mt-5 text-white">My Reviews:</h1>
-                    {% else %}
-                    <h1 class="mt-5 text-white">You have not submitted any reviews yet</h1>
-                    {% endif %}
-                    {% else %}
-                    {% if user_reviews %}
-                    <h1 class="mt-5 text-white">User Reviews:</h1>
-                    {% else %}
-                    <h1 class="mt-5 text-white">User has not submitted any reviews yet</h1>
-                    {% endif %}
-                    {% endif %}
-                </div>
+            <div class="text-center">
+                {% if is_current_user %}
+                {% if user_reviews %}
+                <h1 class="mt-5 text-white">My Reviews:</h1>
+                {% else %}
+                <h1 class="mt-5 text-white">You have not submitted any reviews yet</h1>
+                {% endif %}
+                {% else %}
+                {% if user_reviews %}
+                <h1 class="mt-5 text-white">User Reviews:</h1>
+                {% else %}
+                <h1 class="mt-5 text-white">User has not submitted any reviews yet</h1>
+                {% endif %}
+                {% endif %}
             </div>
             {% if user_reviews %}
             {% for journal, user, review, edit_button_id in user_reviews %}
             <div class="row justify-content-center mt-3">
-                <div class="col-sm-7">
+                <div class="col-sm-12">
                     <div class="card bg-light">
                         <div class="card-body">
                             <div class="'row">
                                 <div class="col-sm-12 text-center">
-                                    <a href="/journal_info/{{ journal.title | replace(' ', '_') }}">{{ journal.title}}</a>
+                                    <a href="/journal_info/{{ journal.title | replace(' ', '_') }}">{{
+                                        journal.title}}</a>
                                     <hr/>
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-sm-3">
+                                <div class="col-sm-4">
                                     <img src="{{ user.profile_pic }}"
                                          class="img-rounded" width="60" height="60">
                                     <div class="review-block-name"><a href="/user_profile/{{ user.id }}">{{ user.email
@@ -79,7 +78,7 @@
                                         review.time_stamp.month }}-{{ review.time_stamp.day }}
                                     </div>
                                 </div>
-                                <div class="col-sm-9">
+                                <div class="col-sm-8">
                                     <div class="review-block-rate">
                                         <div class="review-block-rate">
                                             <div style="font-size: 30px;">
@@ -103,9 +102,11 @@
                                     </div>
                                 </div>
                                 {% if edit_button_id %}
-                                <button class="btn btn-info" id="{{ edit_button_id }}"
-                                        onclick="redirect(this.id, 'edit_review', 'user_profile')">Edit
-                                </button>
+                                <div class="mt-1">
+                                    <button class="btn btn-info" id="{{ edit_button_id }}"
+                                            onclick="redirect(this.id, 'edit_review', 'user_profile')">Edit
+                                    </button>
+                                </div>
                                 {% endif %}
 
                             </div>

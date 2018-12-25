@@ -4,6 +4,11 @@ import config
 from flask_login import LoginManager
 from flask_mail import Mail
 from itsdangerous import URLSafeTimedSerializer
+import redis
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+
+r = redis.Redis(host='localhost', port=6379, db=0)
 
 app = Flask(__name__)
 app.secret_key = config.configurations['SECRET_KEY']
@@ -18,10 +23,15 @@ app.config.update(
 	MAIL_PASSWORD = config.configurations['MAIL_PASSWORD']
 )
 
+app.config['RATELIMIT_STORAGE_URL'] = config.configurations['RATELIMIT_STORAGE_URL']
+app.config['RECAPTCHA_PUBLIC_KEY'] = config.configurations['RECAPTCHA_PUBLIC_KEY']
+app.config['RECAPTCHA_PRIVATE_KEY'] = config.configurations['RECAPTCHA_PRIVATE_KEY']
+
 
 db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 mail = Mail(app)
 serial = URLSafeTimedSerializer(app.secret_key)
+limiter = Limiter(app, key_func=get_remote_address)
 
 from app import routes, models

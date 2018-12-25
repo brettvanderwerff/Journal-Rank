@@ -8,9 +8,11 @@ setting up on Linux with the following:
 
 1. Cloning repo.
 2. Installing requirements `$pip install -r requirements.txt`
-3. Setting Flask environment variable: `$export FLASK_APP=journal-rank.py`
-4. Add gmail username and password to config.py (optional, but required for login, will require allowing your gmail to use less secure apps https://support.google.com/accounts/answer/6010255?hl=en)
-5. Running the Flask app `$flask run`
+3. Run the setup script to setup redis `$bash setup.sh`
+4. Setup up flask recaptcha w/ google recaptcha (https://www.youtube.com/watch?v=VrH0eH4nE-c)
+5. Enter the private and public key for recaptcha in config.py 
+6. Add gmail username and password to config.py (optional, but required for login, will require allowing your gmail to use less secure apps https://support.google.com/accounts/answer/6010255?hl=en)
+7. Running the Flask app `$flask run`
 
 Which launches the landing page:
 

@@ -1,7 +1,7 @@
 from flask import render_template, jsonify, request, flash, redirect, url_for, abort
-from wtforms import TextAreaField, RadioField, StringField
-from wtforms.validators import InputRequired, DataRequired
-from app import app, login_manager, db, serial, mail
+from wtforms import TextAreaField, RadioField
+from wtforms.validators import InputRequired
+from app import app, login_manager, db, serial, mail, limiter
 import json
 import pandas as pd
 import sqlite3
@@ -17,6 +17,7 @@ import random
 from itsdangerous import SignatureExpired
 from flask_mail import Message
 from config import configurations
+import os
 
 
 @login_manager.user_loader
@@ -132,6 +133,7 @@ def edit_reviw(id):
 
 @app.route('/new_review/<journal_name>', methods=['GET', 'POST'])
 @login_required
+@limiter.limit('10 per day')
 def new_review(journal_name):
     journal_name = journal_name.replace('_', ' ')
     form = ReviewForm()
@@ -248,7 +250,6 @@ def login():
     form = LoginForm()
     error = None
     if form.validate_on_submit():
-        print('validate')
         email = form.email.data
         password = form.password.data
         user = User.query.filter_by(email=email).first()
@@ -267,6 +268,7 @@ def login():
 
 
 @app.route('/resend_confirmation', methods=['GET', 'POST'])
+@limiter.limit('50 per day')
 def resend_confirmation():
     form = ResendConfirmation()
     error = None
@@ -298,6 +300,7 @@ def logout():
 
 
 @app.route('/register', methods=['GET', 'POST'])
+@limiter.limit('50 per day')
 def register():
     form = RegisterForm()
     error = None
@@ -329,7 +332,7 @@ def register():
 @app.route('/email_confirm/<token>')
 def email_confirm(token):
     try:
-        token = serial.loads(token, salt='email-confirm', max_age=30)
+        token = serial.loads(token, salt='email-confirm', max_age=3600)
         user = User.query.filter_by(email=token).first()
         user.email_confirmed = 1
         db.session.commit()
@@ -341,6 +344,7 @@ def email_confirm(token):
 
 
 @app.route('/request_password_reset', methods=['GET', 'POST'])
+@limiter.limit('50 per day')
 def request_password_reset():
     error = None
     form = RequestPasswordReset()
@@ -365,9 +369,10 @@ def request_password_reset():
 
 
 @app.route('/password_reset/<token>', methods=['GET', 'POST'])
+@limiter.limit('50 per day')
 def password_reset(token):
     try:
-        token = serial.loads(token, salt='password-reset', max_age=30)
+        token = serial.loads(token, salt='password-reset', max_age=3600)
         form = PasswordReset()
         if form.validate_on_submit():
             user = User.query.filter_by(email=token).first()
@@ -386,8 +391,6 @@ def password_reset(token):
 
 @app.route('/my_profile')
 def my_profile():
-    # ToDo update models to point to profile pics in static
-    # ToDo allow users to upload images, use pillow to resize uploaded images
     id = current_user.get_id()
     return redirect(url_for('user_profile', id=id))
 
@@ -428,9 +431,10 @@ def user_profile(id):
             dir_for_db = '/static/images/profile_pictures/' + filename_with_prefix
             user.profile_pic = dir_for_db
             db.session.commit()
+            if not profile_pic_url.endswith('default_avatar.png'):
+                os.remove('app' + profile_pic_url)
             return redirect(url_for('user_profile', id=id))
         else:
-            print('error')
             error = 'upload avatar pic before submitting'
 
     return render_template('user_profile.html', logged_in=current_user.is_authenticated,
@@ -443,7 +447,6 @@ def user_profile(id):
 
 @app.route('/token_expired/<type>')
 def token_expired(type):
-    # ToDo add legic to let user click on link to send another reset/confirmation link
     return render_template('token_expired.html', type=type, logged_in=current_user.is_authenticated)
 
 
@@ -455,12 +458,12 @@ def about():
 def help():
     return render_template('help.html', logged_in=current_user.is_authenticated)
 
-@app.route('/test')
-def test():
-    return render_template('test.html', logged_in=current_user.is_authenticated)
-
 
 @app.errorhandler(401)
 def access_denied(e):
     flash('You need to register or be logged in to do that :(')
     return render_template('401.html', logged_in=current_user.is_authenticated)
+
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return render_template('429.html')

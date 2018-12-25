@@ -13,6 +13,9 @@
                         {{ render_field(form.email, placeholder=form.email.label.text) }}
                         {{ render_field(form.password, placeholder=form.password.label.text) }}
                         {{ render_field(form.confirm, placeholder=form.confirm.label.text) }}
+                        <div class="mb-2">
+                            {{ form.recaptcha }}
+                        </div>
                         {{ form.submit(type="submit", class="btn btn-lg btn-primary btn-block",
                         value=form.submit.label.text)|safe }}
                         {% if error %}

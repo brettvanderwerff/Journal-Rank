@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container">
+<div class="container-fluid">
     <div class="row mt-3">
         <div class="col-sm-6">
             <div class="card h-100 bg-light">
@@ -117,7 +117,7 @@
         </div>
     </div>
     <div class="row justify-content-center align-items-center mt-3 mb-3">
-        <div class="col-sm-7">
+        <div class="col-sm-8">
             <div class="card bg-light text-center">
                 <div class="card-body">
                     {% if user_reviews %}
@@ -148,7 +148,7 @@
     {% if user_reviews %}
     {% for user, review in user_reviews %}
     <div class="row justify-content-center mt-3">
-        <div class="col-sm-7">
+        <div class="col-sm-8">
             <div class="card bg-light">
                 <div class="card-body">
                     <div class="row">
@@ -161,7 +161,7 @@
                                 review.time_stamp.day }}
                             </div>
                             {% if current_user_id == review.user_id %}
-                            <div>
+                            <div class="mt-1">
                                 <button class="btn btn-info" id="{{ edit_button_id }}"
                                         onclick="redirect(this.id, 'edit_review', 'journal_info')">Edit
                                 </button>

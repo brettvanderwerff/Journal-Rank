@@ -12,6 +12,9 @@
                     <h5 class="text-center mb-4">(Check email for link or resend link below if expired)</h5>
                     <fieldset>
                         {{ render_field(form.email, placeholder=form.email.label.text) }}
+                         <div class="mb-2">
+                            {{ form.recaptcha }}
+                        </div>
                         {{ form.submit(type="submit", class="btn btn-lg btn-primary btn-block",
                         value=form.submit.label.text)|safe }}
                         {% if error %}
